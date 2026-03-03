@@ -1,0 +1,93 @@
+---
+title: create_glyph
+description: Create a new glyph in the open font
+---
+
+## Description
+
+Create a new glyph in the open font with optional width, unicode value, and initial paths.
+
+## Parameters
+
+<ParamField path="glyph_name" type="string" required>
+  Name for the new glyph (e.g., "a.ss01", "uni0041")
+</ParamField>
+
+<ParamField path="width" type="float" default="600">
+  Advance width in font units
+</ParamField>
+
+<ParamField path="unicode_value" type="string" default="">
+  Optional unicode value (e.g., "0061" for 'a'). Pass empty string for no unicode.
+</ParamField>
+
+<ParamField path="paths" type="list[dict]" default="[]">
+  Optional initial paths (same format as set_glyph_paths). Each path is a dict with:
+  - `closed` (bool): Whether the path is closed
+  - `nodes` (list[dict]): List of nodes, each with:
+    - `x` (float): X coordinate
+    - `y` (float): Y coordinate
+    - `type` (string): Node type ("line", "curve", or "offcurve")
+    - `smooth` (bool): Whether the node is smooth
+</ParamField>
+
+## Returns
+
+Returns a dict with:
+- `ok` (bool): Whether the operation succeeded
+- `glyph` (string): The created glyph name
+- `error` (string): Error message if operation failed
+
+## Examples
+
+### Create a simple glyph with width
+
+```python
+result = create_glyph(
+    glyph_name="a.ss01",
+    width=550
+)
+```
+
+### Create a glyph with unicode
+
+```python
+result = create_glyph(
+    glyph_name="Aacute",
+    width=600,
+    unicode_value="00C1"
+)
+```
+
+### Create a glyph with initial paths
+
+```python
+# Create a simple rectangle
+rectangle_path = {
+    "closed": True,
+    "nodes": [
+        {"x": 100, "y": 0, "type": "line", "smooth": False},
+        {"x": 500, "y": 0, "type": "line", "smooth": False},
+        {"x": 500, "y": 700, "type": "line", "smooth": False},
+        {"x": 100, "y": 700, "type": "line", "smooth": False}
+    ]
+}
+
+result = create_glyph(
+    glyph_name="test",
+    width=600,
+    paths=[rectangle_path]
+)
+```
+
+## Notes
+
+- Glyph names must be unique within the font
+- For unicode values, use hex strings without "U+" prefix (e.g., "0061" not "U+0061")
+- Path direction rules: outer contours counter-clockwise, counters/holes clockwise
+- `correctPathDirection()` is called automatically after setting paths
+- Node types:
+  - `"line"`: on-curve point with straight connection to previous
+  - `"curve"`: on-curve point with smooth cubic bezier connection
+  - `"offcurve"`: cubic bezier control handle (always in pairs before a "curve")
+  - Curve segments: offcurve, offcurve, curve (3 nodes per segment)

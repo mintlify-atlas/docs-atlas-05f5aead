@@ -1,0 +1,140 @@
+---
+title: measure_color
+description: Measure the ink density (typographic color) of a single glyph
+---
+
+## Overview
+
+Measures the ink density (typographic color) of a single glyph. Ink density is the ratio of filled area to total bounding box, normalized by zone height (x-height for lowercase, cap-height for uppercase).
+
+## Syntax
+
+```python
+measure_color(
+    glyph_name: str,
+    master_id: str = ""
+) -> dict
+```
+
+## Parameters
+
+<ParamField path="glyph_name" type="string" required>
+  Name of the glyph to measure (e.g., "n", "H", "o")
+</ParamField>
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. If empty, uses the first master.
+</ParamField>
+
+## Return Value
+
+Returns a dictionary containing:
+
+```json
+{
+  "ok": true,
+  "glyph": "n",
+  "masterId": "...",
+  "density": 0.42,
+  "filledArea": 12500,
+  "boundingBox": {
+    "width": 580,
+    "height": 520
+  },
+  "normalizedBy": "x-height"
+}
+```
+
+## Density Values
+
+- **Range**: 0.0 to 1.0
+- **Typical text fonts**: 0.15 to 0.50
+- **Higher value** = darker/heavier glyph
+- **Lower value** = lighter glyph
+
+<Info>
+  Density is normalized by zone height so values are comparable across uppercase, lowercase, and figures.
+</Info>
+
+## How It Works
+
+1. **Calculates filled area**: Rasterizes the glyph and counts filled pixels
+2. **Gets bounding box**: Width × height of the glyph's bounds
+3. **Normalizes by zone**:
+   - Lowercase: Uses x-height
+   - Uppercase: Uses cap-height
+   - Figures: Uses cap-height
+4. **Returns ratio**: `density = filledArea / (width × zoneHeight)`
+
+## Examples
+
+### Measure a single glyph
+
+```python
+result = measure_color("n")
+print(f"n density: {result['density']:.3f}")
+# Output: n density: 0.420
+```
+
+### Compare two glyphs manually
+
+```python
+n_color = measure_color("n")
+o_color = measure_color("o")
+
+print(f"n: {n_color['density']:.3f}")
+print(f"o: {o_color['density']:.3f}")
+print(f"o is {(o_color['density'] / n_color['density'] - 1) * 100:.1f}% darker than n")
+```
+
+### Measure across all masters
+
+```python
+masters = get_masters()
+for master in masters["masters"]:
+    result = measure_color("H", master_id=master["id"])
+    print(f"{master['name']}: {result['density']:.3f}")
+```
+
+### Check density before/after RMX filter
+
+```python
+# Before
+before = measure_color("e")
+print(f"Before: {before['density']:.3f}")
+
+# Apply RMX Tuner
+rmx_tune("e", weight=20)
+
+# After
+after = measure_color("e")
+print(f"After: {after['density']:.3f}")
+print(f"Change: {(after['density'] - before['density']):.3f}")
+```
+
+## Use Cases
+
+- **Individual glyph analysis**: Check if a single glyph is too light or dark
+- **Before/after comparison**: Measure density changes after applying filters
+- **Reference values**: Get baseline density for compare_color analysis
+- **Quality control**: Verify specific glyphs match design intent
+
+<Note>
+  For comparing multiple glyphs automatically, use [compare_color](/api/analysis/compare-color) or [audit_font_color](/api/analysis/audit-font-color) instead. They evaluate against industry patterns and mark glyphs in GlyphsApp.
+</Note>
+
+## Interpreting Results
+
+### Typical density ratios in professional fonts:
+
+- **n (reference)**: ~0.40-0.45
+- **o**: ~0.42-0.48 (typically 5-10% darker than n)
+- **H**: ~0.35-0.40 (lighter than lowercase due to more whitespace)
+- **i**: ~0.35-0.42 (lighter due to narrow width)
+- **m**: ~0.48-0.55 (darker due to multiple stems)
+
+## Related Tools
+
+- [compare_color](/api/analysis/compare-color) - Compare color across multiple glyphs
+- [audit_font_color](/api/analysis/audit-font-color) - Full font color audit
+- [measure_stems](/api/analysis/measure-stems) - Measure stem thickness

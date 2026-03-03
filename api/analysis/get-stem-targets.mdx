@@ -1,0 +1,132 @@
+---
+title: get_stem_targets
+description: Get the designer's intended stem values from the Dimensions palette
+---
+
+## Overview
+
+Retrieves the designer's intended stem values from GlyphsApp's custom parameters AND measured values from reference glyphs (H, O, n, o). These are the TARGET values that other glyphs should match.
+
+## Syntax
+
+```python
+get_stem_targets(master_id: str = "") -> dict
+```
+
+## Parameters
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. If empty, returns targets for all masters.
+</ParamField>
+
+## Return Value
+
+Returns a dictionary containing stem target values for each master:
+
+```json
+{
+  "ok": true,
+  "masters": {
+    "Regular": {
+      "masterId": "...",
+      "stems": {
+        "uppercase": {
+          "vertical": 90,
+          "horizontal": 75,
+          "source": "measured from H"
+        },
+        "lowercase": {
+          "vertical": 85,
+          "horizontal": 70,
+          "source": "measured from n"
+        }
+      },
+      "snapValues": [85, 90],
+      "customParameter": "stemSnapH: 85, 90"
+    },
+    "Bold": {
+      "masterId": "...",
+      "stems": {
+        "uppercase": {"vertical": 140, "horizontal": 120},
+        "lowercase": {"vertical": 130, "horizontal": 110}
+      }
+    }
+  }
+}
+```
+
+## How It Works
+
+1. **Reads custom parameters**: Checks for `stemSnapH` and `stemSnapV` in Font Info > Masters
+2. **Measures reference glyphs**: 
+   - **H**: Uppercase vertical and horizontal stems
+   - **O**: Uppercase round forms
+   - **n**: Lowercase vertical and horizontal stems  
+   - **o**: Lowercase round forms
+3. **Returns combined data**: Both designer-specified and measured values
+
+## Examples
+
+### Get targets for all masters
+
+```python
+targets = get_stem_targets()
+for master_name, data in targets["masters"].items():
+    uc_vert = data["stems"]["uppercase"]["vertical"]
+    lc_vert = data["stems"]["lowercase"]["vertical"]
+    print(f"{master_name}: UC={uc_vert}u, LC={lc_vert}u")
+```
+
+### Check if glyphs match target
+
+```python
+# Get the target stem value
+targets = get_stem_targets()
+lc_target = targets["masters"]["Regular"]["stems"]["lowercase"]["vertical"]
+
+# Measure a specific glyph
+result = measure_stems("h")
+actual = result["verticalStem"]["dominant"]
+
+# Compare
+deviation = actual - lc_target
+print(f"h stem: {actual}u (target: {lc_target}u, deviation: {deviation:+d}u)")
+```
+
+### Get targets for specific master
+
+```python
+masters = get_masters()
+bold_id = masters["masters"][1]["id"]
+
+targets = get_stem_targets(master_id=bold_id)
+print(targets)
+```
+
+## Use Cases
+
+- **Baseline for compare_stems**: Use targets to check if glyphs hit designer's intended values
+- **Quality control**: Verify that reference glyphs match custom parameters
+- **RMX filter validation**: Compare measured stems against design intent
+- **Multi-master setup**: Ensure stem values are correctly defined across masters
+
+<Info>
+  This tool is the baseline for `compare_stems` — it checks if glyphs hit the designer's intended values, not just if they're consistent with each other.
+</Info>
+
+## Custom Parameters
+
+To set stem snap values in GlyphsApp:
+
+1. Go to **Font Info > Masters**
+2. Select a master
+3. Add custom parameter: `stemSnapH` or `stemSnapV`
+4. Enter values: `85, 90` (for horizontal stems of 85u and 90u)
+
+These values guide GlyphsApp's autohinting and provide reference targets.
+
+## Related Tools
+
+- [measure_stems](/api/analysis/measure-stems) - Measure stem thickness of a glyph
+- [compare_stems](/api/analysis/compare-stems) - Compare stems across multiple glyphs
+- [get_masters](/api/read/get-masters) - Get all font masters

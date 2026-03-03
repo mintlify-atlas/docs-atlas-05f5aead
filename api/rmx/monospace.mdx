@@ -1,0 +1,133 @@
+---
+title: rmx_monospace
+description: Adjust a glyph to a fixed width using RMX Monospacer
+---
+
+## Overview
+
+Adjust a glyph to a fixed width using RMX Monospacer. Intelligently distributes width change between outline scaling and spacing adjustment to maintain visual quality.
+
+<Warning>
+  **Requires 2+ masters in the font.** This tool will not work with single-master fonts.
+</Warning>
+
+## Signature
+
+```python
+rmx_monospace(
+    glyph_name: str,
+    mono_width: int = 0,
+    keep_stroke: int = 100,
+    use_spacing: int = 40,
+    master_id: str = ""
+) -> dict
+```
+
+## Parameters
+
+<ParamField path="glyph_name" type="string" required>
+  Name of the glyph to adjust
+</ParamField>
+
+<ParamField path="mono_width" type="integer" default="0">
+  Target advance width in units
+  
+  Set to `0` to keep current width
+</ParamField>
+
+<ParamField path="keep_stroke" type="integer" default="100">
+  How much to preserve stroke weight, 0-100%
+  
+  - `100` = fully preserve stroke weight
+  - `0` = no stroke weight preservation
+</ParamField>
+
+<ParamField path="use_spacing" type="integer" default="40">
+  How much width change goes to spacing vs outline, 0-100%
+  
+  - `100` = all adjustment via spacing (no outline scaling)
+  - `0` = all adjustment via outline scaling (no spacing change)
+  - `40` = balanced distribution (default)
+</ParamField>
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. If empty, uses the first master
+</ParamField>
+
+## When to Use
+
+Use `rmx_monospace` when you need to:
+- Create monospaced versions of glyphs
+- Ensure all glyphs in a set have the same advance width
+- Adjust multiple glyphs to a target width while maintaining visual quality
+
+<Note>
+  For batch operations on multiple glyphs, use [`rmx_batch`](/api/rmx/batch) with `filter_name="monospace"`.
+</Note>
+
+## Usage Examples
+
+### Set a single glyph to fixed width
+
+```python
+# Make 'A' 600 units wide
+rmx_monospace("A", mono_width=600)
+```
+
+### Preserve stroke weight completely
+
+```python
+# Adjust to 600 units, fully preserve stroke weight
+rmx_monospace("M", mono_width=600, keep_stroke=100)
+```
+
+### Use mostly spacing adjustment
+
+```python
+# Adjust to 600 units, prefer spacing over scaling
+rmx_monospace("i", mono_width=600, use_spacing=80)
+```
+
+### Use mostly outline scaling
+
+```python
+# Adjust to 600 units, prefer scaling over spacing
+rmx_monospace("W", mono_width=600, use_spacing=20)
+```
+
+### Make all uppercase letters uniform width
+
+```python
+# Use rmx_batch for multiple glyphs (see example below)
+rmx_batch(
+    "monospace",
+    ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+     "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"],
+    params={"monoWidth": 600}
+)
+```
+
+## How It Works
+
+The RMX Monospacer intelligently balances between:
+
+1. **Outline scaling** - Scales the glyph outline horizontally
+2. **Spacing adjustment** - Adjusts sidebearings
+
+The `use_spacing` parameter controls the distribution:
+- Higher values → more spacing adjustment, less outline scaling
+- Lower values → more outline scaling, less spacing adjustment
+
+The `keep_stroke` parameter controls stroke weight preservation:
+- `100` → fully compensates for horizontal scaling to maintain stroke weight
+- `0` → no compensation (strokes may appear thicker/thinner)
+
+## Response
+
+Returns a dictionary with the operation result and any messages from the RMX Monospacer filter.
+
+## Requirements
+
+<Warning>
+  This tool requires 2+ masters in the font. Single-master fonts are not supported.
+</Warning>

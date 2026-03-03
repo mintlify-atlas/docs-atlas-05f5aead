@@ -1,0 +1,120 @@
+---
+title: set_glyph_paths
+description: Replace ALL paths on a glyph's layer in GlyphsApp
+---
+
+## Description
+
+Replace ALL paths on a glyph's layer in GlyphsApp. This OVERWRITES existing paths. The glyph must already exist.
+
+<Warning>
+  This operation **OVERWRITES** all existing paths on the glyph. The previous paths will be lost. Use with caution.
+</Warning>
+
+## Parameters
+
+<ParamField path="glyph_name" type="string" required>
+  Name of the glyph to modify
+</ParamField>
+
+<ParamField path="paths" type="list[dict]" required>
+  List of path dictionaries. Each path must have:
+  - `closed` (bool): Whether the path is closed
+  - `nodes` (list[dict]): List of nodes, each with:
+    - `x` (float): X coordinate
+    - `y` (float): Y coordinate  
+    - `type` (string): Node type ("line", "curve", or "offcurve")
+    - `smooth` (bool): Whether the node is smooth
+</ParamField>
+
+<ParamField path="master_id" type="string" default="">
+  Master ID to modify. If empty, uses the first master.
+</ParamField>
+
+## Returns
+
+Returns a dict with:
+- `ok` (bool): Whether the operation succeeded
+- `glyph` (string): The modified glyph name
+- `pathCount` (int): Number of paths set
+- `error` (string): Error message if operation failed
+
+## Node Types
+
+### Line
+On-curve point with straight connection to previous node.
+
+### Curve
+On-curve point with smooth cubic bezier connection to previous node.
+
+### Offcurve
+Cubic bezier control handle. Always comes in pairs before a "curve" node.
+
+**Curve segments require 3 nodes:** offcurve, offcurve, curve
+
+## Path Direction Rules
+
+- **Outer contours**: counter-clockwise
+- **Counters/holes**: clockwise
+
+`correctPathDirection()` is called automatically after setting paths.
+
+## Examples
+
+### Replace with a rectangle
+
+```python
+rectangle = {
+    "closed": True,
+    "nodes": [
+        {"x": 100, "y": 0, "type": "line", "smooth": False},
+        {"x": 500, "y": 0, "type": "line", "smooth": False},
+        {"x": 500, "y": 700, "type": "line", "smooth": False},
+        {"x": 100, "y": 700, "type": "line", "smooth": False}
+    ]
+}
+
+result = set_glyph_paths(
+    glyph_name="H",
+    paths=[rectangle]
+)
+```
+
+### Replace with a curved path
+
+```python
+# Simple curve with control handles
+curved_path = {
+    "closed": True,
+    "nodes": [
+        {"x": 100, "y": 0, "type": "line", "smooth": False},
+        {"x": 500, "y": 0, "type": "line", "smooth": False},
+        {"x": 550, "y": 100, "type": "offcurve", "smooth": False},
+        {"x": 550, "y": 200, "type": "offcurve", "smooth": False},
+        {"x": 500, "y": 300, "type": "curve", "smooth": True},
+        {"x": 100, "y": 300, "type": "line", "smooth": False}
+    ]
+}
+
+result = set_glyph_paths(
+    glyph_name="O",
+    paths=[curved_path]
+)
+```
+
+### Set paths for specific master
+
+```python
+result = set_glyph_paths(
+    glyph_name="n",
+    paths=my_paths,
+    master_id="master-01-regular"
+)
+```
+
+## Notes
+
+- The glyph must already exist (use `create_glyph` to create new glyphs)
+- If `master_id` is empty, uses the first master
+- Path direction is automatically corrected after setting
+- This operation can be undone in GlyphsApp with Cmd+Z

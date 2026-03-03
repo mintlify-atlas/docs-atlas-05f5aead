@@ -1,0 +1,199 @@
+---
+title: check_compatibility
+description: Check master compatibility across all glyphs in the font
+---
+
+## Overview
+
+Checks master compatibility by comparing layers across masters for each glyph. Ensures that glyphs have matching structure (path count, node count, node types, path directions, etc.) required for clean interpolation.
+
+## Syntax
+
+```python
+check_compatibility(
+    glyph_names: list[str] = None
+) -> str
+```
+
+## Parameters
+
+<ParamField path="glyph_names" type="list[str]" default="None">
+  Optional list of glyphs to check. If not provided, checks ALL glyphs in the font.
+</ParamField>
+
+## Return Value
+
+Returns a formatted markdown report with:
+
+- Summary statistics (compatible, incompatible, empty/missing)
+- Detailed table of incompatible glyphs with specific issues
+- List of partially drawn glyphs (present in some masters, missing in others)
+- List of empty glyphs
+
+## Compatibility Checks
+
+For each glyph, compares across all masters:
+
+1. **Path count**: Must match across all masters
+2. **Node count**: Each path must have same number of nodes
+3. **Node types**: Node types must match (line/curve/offcurve)
+4. **Path directions**: Clockwise vs counter-clockwise must match
+5. **Path order**: Spatial position of paths must match
+6. **Starting node**: Each path must start at corresponding position
+7. **Component count and names**: Components must match
+8. **Anchor names**: Anchor names must match
+
+<Info>
+  For variable fonts to interpolate correctly, ALL of these structural elements must match across masters. Any mismatch causes incompatibility.
+</Info>
+
+## Color Marking System
+
+<Info>
+  Results are automatically marked in GlyphsApp:
+  - **Red (0)** = incompatible (structural mismatch)
+  - **Orange (1)** = empty or missing in one or more masters
+  - **Green (4)** = fully compatible
+</Info>
+
+## Examples
+
+### Check all glyphs
+
+```python
+report = check_compatibility()
+print(report)
+# Checks all glyphs across all masters
+```
+
+### Check specific glyphs
+
+```python
+report = check_compatibility(glyph_names=["a", "b", "c", "n", "o"])
+```
+
+### Check uppercase only
+
+```python
+uppercase = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
+report = check_compatibility(glyph_names=uppercase)
+```
+
+### Check after editing glyphs
+
+```python
+# After making changes to lowercase letters
+lowercase = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"]
+report = check_compatibility(glyph_names=lowercase)
+```
+
+## Sample Output
+
+```markdown
+## Compatibility Report (2 masters: Regular, Bold)
+
+**52 glyphs checked** — 48 compatible, 3 incompatible, 1 empty/missing
+
+### Incompatible (3)
+
+| Glyph | Issues |
+|-------|--------|
+| a | Path count differs: Regular=2, Bold=3 |
+| e | Path 0 node count differs: Regular=24, Bold=26 |
+| g | Path 0 start node differs; Path 1 direction differs |
+
+### Partially drawn (1)
+
+| Glyph | Issue |
+|-------|-------|
+| germandbls | Only drawn in Regular, empty in Bold |
+
+### All layers empty (0)
+```
+
+## Common Incompatibility Issues
+
+### Path count mismatch
+
+**Issue**: Regular has 2 paths, Bold has 3
+
+**Cause**: Added or removed a path in one master only
+
+**Fix**: Ensure all masters have the same number of paths
+
+### Node count mismatch
+
+**Issue**: Path 0 has 24 nodes in Regular, 26 in Bold
+
+**Cause**: Added/removed nodes in one master
+
+**Fix**: Add/remove nodes to match, or use compatible point structure
+
+### Start node mismatch
+
+**Issue**: Paths start at different positions
+
+**Cause**: Manually edited paths without maintaining starting point
+
+**Fix**: In GlyphsApp: Select path → Right-click → "Set Start Point"
+
+### Path direction differs
+
+**Issue**: Path is clockwise in one master, counter-clockwise in another
+
+**Cause**: Manually reversed path direction
+
+**Fix**: In GlyphsApp: Select path → Path → Correct Path Direction
+
+### Path order mismatch
+
+**Issue**: Paths in different spatial order
+
+**Cause**: Drew paths in different order across masters
+
+**Fix**: Reorder paths to match (challenging — may need to redraw)
+
+## Use Cases
+
+- **Variable font validation**: Ensure all masters are compatible before export
+- **After editing**: Check compatibility after making structural changes
+- **Multi-master setup**: Verify new masters are compatible with existing ones
+- **Troubleshooting interpolation**: Find why glyphs aren't interpolating correctly
+- **Quality control**: Final check before production
+
+<Note>
+  This tool is essential for variable fonts. Run it regularly during design to catch compatibility issues early.
+</Note>
+
+## Fixing Incompatibilities
+
+### In GlyphsApp
+
+1. **View incompatibilities**: Window → Show Glyph Info → Layers tab shows compatibility warnings
+2. **Compare layers side-by-side**: View → Show All Masters
+3. **Fix structure**: Manually edit to match node count, path count, etc.
+4. **Re-check**: Run `check_compatibility()` again
+
+### Using MCP
+
+```python
+# Get detailed layer info
+regular = get_glyph("a")
+for layer in regular["layers"]:
+    print(f"{layer['masterName']}: {len(layer['paths'])} paths")
+    for i, path in enumerate(layer['paths']):
+        print(f"  Path {i}: {len(path['nodes'])} nodes")
+```
+
+## Master Count
+
+The tool automatically detects the number of masters in the font:
+
+- **Single master**: No compatibility check needed (all glyphs compatible)
+- **2+ masters**: Full compatibility check across all masters
+
+## Related Tools
+
+- [get_glyph](/api/read/get-glyph) - Get detailed layer structure
+- [get_masters](/api/read/get-masters) - Get all font masters
+- [set_glyph_paths](/api/write/set-glyph-paths) - Edit glyph paths (be careful with compatibility!)

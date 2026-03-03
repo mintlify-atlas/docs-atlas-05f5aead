@@ -1,0 +1,103 @@
+---
+title: duplicate_glyph
+description: Duplicate a glyph under a new name
+---
+
+## Description
+
+Duplicate a glyph (all layers and paths) under a new name. Useful for creating alternates or backups before editing.
+
+## Parameters
+
+<ParamField path="glyph_name" type="string" required>
+  Name of the glyph to duplicate
+</ParamField>
+
+<ParamField path="new_name" type="string" required>
+  Name for the duplicate glyph. Must not already exist in the font.
+</ParamField>
+
+## Returns
+
+Returns a dict with:
+- `ok` (bool): Whether the operation succeeded
+- `source` (string): The source glyph name
+- `duplicate` (string): The new duplicate glyph name
+- `error` (string): Error message if operation failed
+
+## Examples
+
+### Create a stylistic alternate
+
+```python
+result = duplicate_glyph(
+    glyph_name="a",
+    new_name="a.ss01"
+)
+```
+
+### Create a backup before editing
+
+```python
+# Backup before major changes
+result = duplicate_glyph(
+    glyph_name="R",
+    new_name="R.backup"
+)
+
+# Now safe to modify R
+set_glyph_paths("R", new_paths)
+```
+
+### Create small cap variant
+
+```python
+result = duplicate_glyph(
+    glyph_name="a",
+    new_name="a.sc"
+)
+
+# Then scale down to small cap height
+rmx_scale("a.sc", height=75)
+```
+
+### Batch create alternates
+
+```python
+# Create .ss01 alternates for lowercase
+for letter in "abcdefghijklmnopqrstuvwxyz":
+    result = duplicate_glyph(letter, f"{letter}.ss01")
+    if result.get('ok'):
+        print(f"Created {letter}.ss01")
+```
+
+### Create multiple versions for testing
+
+```python
+# Test different optical sizes
+for size in ["caption", "text", "display"]:
+    duplicate_glyph("a", f"a.{size}")
+```
+
+## What Gets Duplicated
+
+- **All layers** (all masters)
+- **All paths** (outlines)
+- **Components** (references to other glyphs)
+- **Anchors** (positioning marks)
+- **Width** (advance width)
+- **Unicode** (if set)
+- **Color** (glyph label color)
+
+## What Doesn't Get Duplicated
+
+- **Kerning pairs** (the duplicate starts with no kerning)
+- **OpenType feature code** (references to the original glyph name)
+
+## Notes
+
+- Operation fails if `new_name` already exists in the font
+- All layers across all masters are duplicated
+- The duplicate is an independent glyph - changes don't affect the original
+- Changes are undoable in GlyphsApp with Cmd+Z
+- Useful workflow: duplicate → modify → compare → keep best version

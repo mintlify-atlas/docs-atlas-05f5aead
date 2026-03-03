@@ -1,0 +1,75 @@
+---
+title: set_glyph_width
+description: Set the advance width of a glyph
+---
+
+## Description
+
+Set the advance width of a glyph for a specific master or the first master.
+
+## Parameters
+
+<ParamField path="glyph_name" type="string" required>
+  Name of the glyph to modify
+</ParamField>
+
+<ParamField path="width" type="float" required>
+  Advance width in font units
+</ParamField>
+
+<ParamField path="master_id" type="string" default="">
+  Master ID to modify. If empty, uses the first master.
+</ParamField>
+
+## Returns
+
+Returns a dict with:
+- `ok` (bool): Whether the operation succeeded
+- `glyph` (string): The modified glyph name
+- `width` (float): The new width value
+- `masterId` (string): The master that was modified
+- `error` (string): Error message if operation failed
+
+## Examples
+
+### Set width for first master
+
+```python
+result = set_glyph_width(
+    glyph_name="A",
+    width=650
+)
+```
+
+### Set width for specific master
+
+```python
+result = set_glyph_width(
+    glyph_name="A",
+    width=750,
+    master_id="master-02-bold"
+)
+```
+
+### Batch set widths for multiple glyphs
+
+```python
+# Make all punctuation 300 units wide
+for glyph in ["period", "comma", "colon", "semicolon"]:
+    set_glyph_width(glyph, 300)
+```
+
+### Set different widths across masters
+
+```python
+# Regular master: 600u, Bold master: 650u
+set_glyph_width("n", 600, "master-01-regular")
+set_glyph_width("n", 650, "master-02-bold")
+```
+
+## Notes
+
+- Width is specified in font units (typically 1000 units = 1 em)
+- Changes are undoable in GlyphsApp with Cmd+Z
+- Use `get_masters()` to find available master IDs
+- Width affects spacing but not the glyph outline itself

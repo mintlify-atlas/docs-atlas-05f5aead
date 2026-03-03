@@ -1,0 +1,258 @@
+---
+title: analyze_kerning
+description: Analyze kerning quality across all masters
+---
+
+## Overview
+
+Comprehensive kerning analysis that checks for quality issues and cross-master consistency problems. Identifies missing pairs, sign changes, outliers, redundant exceptions, and group orphans.
+
+## Syntax
+
+```python
+analyze_kerning(master_id: str = "") -> str
+```
+
+## Parameters
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. Cross-master checks always run across all masters regardless of this parameter.
+</ParamField>
+
+## Return Value
+
+Returns a formatted markdown report with:
+
+- Statistics table (pair counts, ranges per master)
+- Cross-master missing pairs (causes interpolation jumps)
+- Cross-master sign changes (positive → negative across masters)
+- Outlier values (extreme kerning >40% of UPM)
+- Redundant exceptions (glyph-level overrides matching group value)
+- Group orphans (letters missing kerning group assignments)
+- Critical pair coverage (essential pairs with/without kerning)
+- Exception ratio warnings (high exception count may indicate sidebearing issues)
+
+## Checks Performed
+
+### 1. Cross-master missing pairs
+
+**Problem**: Pair exists in some masters but not others
+
+**Impact**: Interpolation will jump to/from 0, causing spacing inconsistencies in variable fonts
+
+**Example**: AV=-50 in Regular, but missing in Bold → interpolates Regular=-50, Bold=0
+
+### 2. Cross-master sign changes
+
+**Problem**: Kerning flips from positive to negative (or vice versa) across masters
+
+**Impact**: Causes unexpected interpolation behavior
+
+**Example**: AV=-30 in Regular, AV=+20 in Bold → interpolates through 0
+
+### 3. Outlier values
+
+**Problem**: Extreme kerning values (>40% of UPM)
+
+**Impact**: May indicate typos or excessive correction (should be solved with sidebearings)
+
+**Example**: In 1000 UPM font, kerning greater than 400u or less than -400u
+
+### 4. Redundant exceptions
+
+**Problem**: Glyph-level pair that matches the group-level value
+
+**Impact**: Bloats kerning table unnecessarily
+
+**Example**: Group @MMK_L_A/@MMK_R_V = -50, also A/V = -50 → A/V is redundant
+
+### 5. Group orphans
+
+**Problem**: Letter glyphs missing left/right kerning group assignments
+
+**Impact**: Must be kerned individually (very inefficient)
+
+**Categories**:
+- Missing both groups (most severe)
+- Missing left group only
+- Missing right group only
+
+### 6. Critical pair coverage
+
+**Problem**: Essential high-frequency pairs lack kerning
+
+**Impact**: Poor spacing in common words
+
+**Checked pairs**: VA, AV, Ty, We, To, Wa, etc. (uppercase-uppercase, uppercase-lowercase, lowercase-lowercase)
+
+## Color Marking System
+
+<Info>
+  Affected glyphs are automatically marked in GlyphsApp:
+  - **Red (0)** = cross-master issues (missing pairs, sign changes)
+  - **Yellow (3)** = quality warnings (outliers, redundant exceptions)
+</Info>
+
+## Examples
+
+### Analyze all masters
+
+```python
+report = analyze_kerning()
+print(report)
+# Analyzes all masters, reports cross-master issues
+```
+
+### Analyze after kerning edits
+
+```python
+# After adding/editing kerning pairs
+report = analyze_kerning()
+# Check for inconsistencies introduced
+```
+
+### Check specific master (statistics only)
+
+```python
+masters = get_masters()
+bold_id = masters["masters"][1]["id"]
+
+report = analyze_kerning(master_id=bold_id)
+# Still checks cross-master issues across ALL masters
+```
+
+## Sample Output
+
+```markdown
+## Kerning Analysis (2 masters: Regular, Bold)
+
+### Statistics
+
+| Master | Pairs | Group | Exceptions | Range |
+|--------|-------|-------|------------|-------|
+| Regular | 1250 | 1180 | 70 | -120…40 |
+| Bold | 1230 | 1165 | 65 | -150…45 |
+
+### Cross-master: Missing pairs (12)
+Pairs present in some masters but not all — interpolates to/from 0.
+
+| Pair | Present in | Missing from |
+|------|-----------|-------------|
+| A / V | Regular | Bold |
+| T / y | Regular, Bold | Light |
+| W / a | Bold | Regular |
+
+### Cross-master: Sign changes (3)
+Pairs where kerning flips direction across masters.
+
+| Pair | Regular | Bold |
+|------|---------|------|
+| f / f | -10 | +5 |
+| L / T | +15 | -20 |
+
+### Outlier values (4)
+Pairs with extreme values (>400u = 40% of UPM).
+
+| Pair | Master | Value | % UPM |
+|------|--------|-------|-------|
+| T / A | Regular | -420 | 42% |
+| W / A | Bold | -450 | 45% |
+
+### Redundant exceptions (15)
+Glyph-level pairs that match their group value — can be removed.
+
+| Left | Right | Master | Value |
+|------|-------|--------|-------|
+| A | V | Regular | -50 |
+| A | W | Regular | -45 |
+| ... | ... | | +13 more |
+
+### Group orphans (8)
+Letter glyphs missing kerning group assignments.
+
+**Missing both groups:** germandbls, lslash
+**Missing left group:** ae, oe
+**Missing right group:** ij, dotlessi
+
+### Critical pair coverage (92%)
+45/49 essential pairs have kerning.
+
+**Missing UC-UC:** LY, LW
+**Missing lc-lc:** vo, yo
+
+### Exception ratio warning
+High exception-to-total ratio may indicate sidebearing issues.
+
+- **Regular**: 70/1250 = 5.6% exceptions
+```
+
+## Use Cases
+
+- **Multi-master validation**: Ensure kerning interpolates correctly across masters
+- **Quality control**: Find outliers, redundancies, and missing assignments
+- **Kerning cleanup**: Identify redundant exceptions to remove
+- **Coverage check**: Verify essential pairs are kerned
+- **Troubleshooting**: Debug variable font interpolation issues
+
+<Note>
+  Cross-master issues (missing pairs, sign changes) are critical for variable fonts. They cause interpolation jumps and spacing inconsistencies.
+</Note>
+
+## Interpreting Results
+
+### Cross-master missing pairs (Critical)
+
+**Fix**: Add the missing pair to all masters, or remove from masters that have it
+
+```python
+# Add missing pair to Bold
+set_kerning_pair("A", "V", -50, master_id=bold_id)
+```
+
+### Sign changes (Critical)
+
+**Fix**: Decide which direction is correct and fix the other master(s)
+
+```python
+# Fix sign change in Bold
+set_kerning_pair("f", "f", -10, master_id=bold_id)  # Match Regular
+```
+
+### Outliers (Warning)
+
+**Review**: Check if value is intentional or a typo. Consider fixing with sidebearings instead.
+
+### Redundant exceptions (Cleanup)
+
+**Fix**: Delete the glyph-level pair (group pair will apply)
+
+```python
+delete_kerning_pair("A", "V", master_id=regular_id)  # Group pair will apply
+```
+
+### Group orphans (Efficiency)
+
+**Fix**: Assign glyphs to appropriate kerning groups in GlyphsApp
+
+1. Select glyph
+2. Glyph Info panel → Set "Left Kerning Group" and "Right Kerning Group"
+3. Use existing groups (e.g., @MMK_L_n, @MMK_R_n)
+
+## Critical Pair Coverage
+
+The tool checks coverage of high-frequency pairs that should almost always be kerned:
+
+- **UC-UC**: AV, VA, AW, WA, Ty, Ye, We, Wo, To, etc.
+- **UC-lc**: Ta, Te, Ty, Wa, We, Wo, etc.
+- **lc-lc**: va, av, we, ew, etc.
+
+<Info>
+  Missing critical pairs indicates incomplete kerning. These pairs appear frequently and significantly impact readability.
+</Info>
+
+## Related Tools
+
+- [get_kerning](/api/read/get-kerning) - Get all kerning pairs for a master
+- [set_kerning_pair](/api/write/set-kerning-pair) - Set a kerning pair value
+- [delete_kerning_pair](/api/write/delete-kerning-pair) - Remove a kerning pair
+- [analyze_spacing](/api/analysis/analyze-spacing) - Analyze sidebearing quality

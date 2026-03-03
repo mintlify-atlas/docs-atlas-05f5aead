@@ -1,80 +1,196 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get started with Glyphs MCP in minutes
 ---
 
-## Get started in three steps
+This guide will walk you through your first font analysis using Glyphs MCP.
 
-Get your documentation site running locally and make your first customization.
+## Prerequisites
 
-### Step 1: Set up your local environment
+Before you begin, make sure you've completed the [installation](/installation) steps:
+
+- GlyphsApp plugin installed and running
+- MCP server connected to your AI assistant
+- A font open in GlyphsApp
+
+## Your first analysis
+
+With a font open in GlyphsApp, you can start asking your AI assistant natural language questions.
+
+<Steps>
+  <Step title="Check font information">
+    Ask your AI assistant to get basic font info:
+    
+    ```
+    What's the font family name and how many glyphs does it have?
+    ```
+    
+    The assistant will use the `get_font_info` tool to retrieve details like family name, UPM, glyph count, masters, and metrics.
+  </Step>
+  
+  <Step title="Analyze stem consistency">
+    Check if your stems are consistent across lowercase letters:
+    
+    ```
+    Compare the stems across all my lowercase letters
+    ```
+    
+    This uses the `compare_stems` tool to measure vertical stem thickness across glyphs and identify inconsistencies. Results are automatically marked in GlyphsApp with colors:
+    - **Red** = inconsistent
+    - **Orange** = unreliable measurement
+    - **Yellow** = optical compensation (expected)
+    - **Green** = pass
+  </Step>
+  
+  <Step title="Run a color audit">
+    Check typographic color (ink density) across your entire font:
+    
+    ```
+    Run a full color audit on my font and tell me which glyphs are inconsistent
+    ```
+    
+    The `audit_font_color` tool analyzes all letter glyphs grouped by category (uppercase, lowercase, figures) and flags glyphs that are too dark or too light compared to industry patterns.
+  </Step>
+  
+  <Step title="Make design changes">
+    Ask the assistant to modify a glyph:
+    
+    ```
+    Make the R 20% wider and harmonize the curves
+    ```
+    
+    This will use `rmx_scale` to scale the glyph by 20% in width, then `rmx_harmonize` to optimize the bezier curves for smoothness.
+  </Step>
+</Steps>
+
+## Common workflows
+
+### Quality control
 
 <AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+  <Accordion title="Check master compatibility">
+    Before exporting a multi-master font, verify interpolation compatibility:
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
+    ```
+    Check if all my glyphs are compatible across masters
+    ```
+    
+    Uses `check_compatibility` to verify paths, nodes, components, and anchors match across all masters.
   </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+  
+  <Accordion title="Analyze kerning quality">
+    Review kerning for issues:
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
+    ```
+    Analyze my kerning and show me any problems
+    ```
+    
+    The `analyze_kerning` tool checks for cross-master gaps, sign changes, outliers, and redundant exceptions.
+  </Accordion>
+  
+  <Accordion title="Validate overshoots">
+    Check if round forms overshoot correctly:
+    
+    ```
+    Check overshoot values for all my round glyphs
+    ```
+    
+    Uses `check_overshoots` to verify round and pointed forms overshoot baseline and zone tops by the correct amount (typically 1-2% of zone height).
   </Accordion>
 </AccordionGroup>
 
-### Step 2: Deploy your changes
+### Making changes
 
 <AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+  <Accordion title="Adjust glyph weight">
+    Make a glyph bolder or lighter:
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
+    ```
+    Make the R bolder
+    ```
+    
+    Uses `rmx_tune` with a positive weight delta to increase stroke weight using master interpolation.
+  </Accordion>
+  
+  <Accordion title="Create glyph variants">
+    Duplicate and modify a glyph:
+    
+    ```
+    Duplicate the 'a' glyph as 'a.ss01' and make it 15% narrower
+    ```
+    
+    Uses `duplicate_glyph` to create a copy, then `rmx_scale` to adjust width.
+  </Accordion>
+  
+  <Accordion title="Harmonize curves">
+    Optimize bezier curves after manual editing:
+    
+    ```
+    Harmonize the curves on glyphs H, I, and J
+    ```
+    
+    Uses `rmx_batch` with the harmonize filter to optimize multiple glyphs at once.
   </Accordion>
 </AccordionGroup>
 
-### Step 3: Go live
+## Understanding verdicts
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+Analysis tools evaluate glyphs and assign verdicts:
+
+| Verdict | Color | Meaning |
+| ------- | ----- | ------- |
+| **pass** | Green (4) | Glyph meets expected parameters |
+| **compensation** | Yellow (3) | Optical compensation detected (expected deviation) |
+| **unreliable** | Orange (1) | Measurement can't be reliably determined for this glyph shape |
+| **inconsistent** | Red (0) | Glyph fails check — requires attention |
+
+<Info>
+  When analyzing all masters, the worst verdict across any master determines the final color marking.
+</Info>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card
+    title="Explore API Reference"
+    icon="book"
+    href="/api/read/get-font-info"
+  >
+    Browse all available tools organized by category
+  </Card>
+  <Card
+    title="Multi-master support"
+    icon="layer-group"
+    href="/multi-master-support"
+  >
+    Learn how to work with multiple masters
+  </Card>
+  <Card
+    title="How it works"
+    icon="gears"
+    href="/how-it-works"
+  >
+    Understand the architecture and communication flow
+  </Card>
+  <Card
+    title="RMX Tools"
+    icon="sliders"
+    href="/api/rmx/harmonize"
+  >
+    Optimize curves, scale glyphs, and adjust weight
+  </Card>
 </CardGroup>
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+## Tips
+
+<Tip>
+  When asking for analysis, you can specify which glyphs to check or let the tool analyze all relevant glyphs automatically.
+</Tip>
+
+<Tip>
+  All write operations are undoable in GlyphsApp with Cmd+Z.
+</Tip>
+
+<Warning>
+  Some RMX tools require 2+ masters in your font. The `rmx_tune` tool, for example, uses master interpolation and won't work on single-master fonts.
+</Warning>

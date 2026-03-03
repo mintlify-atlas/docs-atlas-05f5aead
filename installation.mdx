@@ -1,0 +1,138 @@
+---
+title: Installation
+description: Install the GlyphsApp plugin and connect your MCP client
+---
+
+## Overview
+
+Glyphs MCP consists of two components that work together:
+
+1. **GlyphsApp Plugin** — runs an HTTP server inside GlyphsApp
+2. **MCP Server** — translates MCP tool calls to HTTP requests
+
+<Steps>
+  <Step title="Install the GlyphsApp plugin">
+    Choose either the Plugin Manager (recommended) or manual installation.
+
+    ### From Plugin Manager (recommended)
+
+    1. Open GlyphsApp
+    2. Go to **Window > Plugin Manager**
+    3. Search for **MCP**
+    4. Click **Install**
+
+    ### Manual installation
+
+    1. Download **GlyphsMCP.glyphsPlugin.zip** from the [latest release](https://github.com/nmassi/glyphs-mcp/releases/latest)
+    2. Unzip the file
+    3. Double-click to install
+
+    ### Verify installation
+
+    Restart GlyphsApp. You should see **GlyphsMCP** under the **Window** menu.
+
+    <Note>
+      The plugin starts an HTTP server on `127.0.0.1:7745` by default. You can change this in preferences.
+    </Note>
+  </Step>
+
+  <Step title="Connect your MCP client">
+    Configure your MCP client to connect to the Glyphs MCP server.
+
+    ### Claude Code
+
+    Run this command in your terminal:
+
+    ```bash
+    claude mcp add glyphs-mcp -- uvx glyphs-mcp
+    ```
+
+    ### Cursor / VS Code
+
+    Add to your MCP config file:
+
+    <CodeGroup>
+    ```json Cursor
+    {
+      "mcpServers": {
+        "glyphs-mcp": {
+          "command": "uvx",
+          "args": ["glyphs-mcp"]
+        }
+      }
+    }
+    ```
+
+    ```json VS Code
+    {
+      "mcpServers": {
+        "glyphs-mcp": {
+          "command": "uvx",
+          "args": ["glyphs-mcp"]
+        }
+      }
+    }
+    ```
+    </CodeGroup>
+
+    <Tip>
+      Using `uvx` (from the [uv](https://docs.astral.sh/uv/) package manager) automatically handles Python dependencies. Alternatively, use `pip install glyphs-mcp` and point to the installed script.
+    </Tip>
+  </Step>
+
+  <Step title="Verify the connection">
+    1. Open a font in GlyphsApp
+    2. Check that **GlyphsMCP** is running (Window menu should show server status)
+    3. In your MCP client, ask: "What font is currently open?"
+
+    If everything is set up correctly, the assistant will use the `get_font_info` tool and return your font's family name, UPM, glyph count, and masters.
+
+    <Check>
+      You're ready to use Glyphs MCP!
+    </Check>
+  </Step>
+</Steps>
+
+## Plugin menu
+
+The plugin adds a **GlyphsMCP** submenu under **Window** in the menu bar:
+
+- **Start/Stop Server** — toggle the HTTP server
+- **Connect** — copy ready-to-paste MCP config for Claude Code or VS Code
+- **Documentation** — open documentation in your browser
+- **Allow Execute Endpoint** — enable `execute_in_glyphs` (off by default for security)
+
+## Preferences
+
+You can customize the plugin behavior using GlyphsApp preferences:
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `com.nico.glyphs-mcp.port` | `7745` | HTTP server port |
+| `com.nico.glyphs-mcp.autostart` | `true` | Start server on GlyphsApp launch |
+| `com.nico.glyphs-mcp.allowExecute` | `false` | Enable the execute endpoint |
+
+<Warning>
+  The `allowExecute` preference enables arbitrary Python code execution inside GlyphsApp. Only enable this if you trust your MCP client and understand the security implications.
+</Warning>
+
+## Troubleshooting
+
+### Server not starting
+
+- Check if port 7745 is already in use
+- Look for error messages in GlyphsApp's Macro Panel
+- Try manually stopping and starting the server from the Window menu
+
+### MCP client can't connect
+
+- Verify GlyphsApp is running with a font open
+- Check that the GlyphsMCP server is running (green indicator in Window menu)
+- Confirm your MCP config uses the correct command (`uvx glyphs-mcp`)
+- Check your MCP client's logs for connection errors
+
+### Tools not working
+
+- Ensure you have GlyphsApp 3.2 or later
+- Some tools require RMX Tools to be installed for full functionality
+- Check the tool's response for specific error messages

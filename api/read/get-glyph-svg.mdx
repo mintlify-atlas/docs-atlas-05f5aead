@@ -1,0 +1,87 @@
+---
+title: get_glyph_svg
+description: Get a glyph rendered as SVG markup
+---
+
+## Description
+
+Get a glyph rendered as SVG markup.
+
+Returns SVG with viewBox matching the glyph's metrics. Useful for seeing the glyph shape as a vector image.
+
+## Parameters
+
+<ParamField path="glyph_name" type="string" required>
+  Name of the glyph to render as SVG (e.g., "A", "a", "uni0041")
+</ParamField>
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. If empty, uses the first master.
+</ParamField>
+
+## Returns
+
+<ResponseField name="svg" type="string">
+  SVG markup string with proper viewBox and paths
+</ResponseField>
+
+<ResponseField name="width" type="number">
+  Glyph advance width
+</ResponseField>
+
+<ResponseField name="viewBox" type="string">
+  SVG viewBox attribute value
+</ResponseField>
+
+## Usage
+
+```python
+import anthropic
+
+client = anthropic.Client()
+
+response = client.messages.create(
+    model="claude-3-5-sonnet-20241022",
+    max_tokens=2048,
+    tools=[
+        {
+            "type": "mcp",
+            "server_name": "glyphs-mcp",
+            "tool_name": "get_glyph_svg",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "glyph_name": {"type": "string"},
+                    "master_id": {"type": "string"}
+                },
+                "required": ["glyph_name"]
+            }
+        }
+    ],
+    messages=[{"role": "user", "content": "Show me the SVG for letter A"}],
+)
+```
+
+```bash
+# Using Claude Code CLI
+get_glyph_svg("A")
+get_glyph_svg("A", master_id="master02")
+```
+
+## Example Response
+
+```json
+{
+  "svg": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 -200 600 1000'><path d='M100,0 L300,700 L500,0 Z'/></svg>",
+  "width": 600,
+  "viewBox": "0 -200 600 1000"
+}
+```
+
+## Notes
+
+- The SVG includes a proper viewBox that accounts for the font's descender and ascender
+- Useful for visualizing glyphs outside of GlyphsApp
+- Can be embedded in web pages or documentation
+- The coordinate system matches the font's UPM (units per em)
+- For multi-master fonts, specify `master_id` to get a specific master's outline

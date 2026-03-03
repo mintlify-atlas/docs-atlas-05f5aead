@@ -1,0 +1,168 @@
+---
+title: compare_color
+description: Compare typographic color (ink density) across multiple glyphs
+---
+
+## Overview
+
+Compares typographic color (ink density) across multiple glyphs to find glyphs that are visually too dark or too light. Uses per-glyph expected density ratios from industry patterns and automatically marks results in GlyphsApp.
+
+## Syntax
+
+```python
+compare_color(
+    glyph_names: list[str],
+    master_id: str = ""
+) -> str
+```
+
+## Parameters
+
+<ParamField path="glyph_names" type="list[str]" required>
+  List of glyph names to compare (e.g., ["n", "o", "h", "m", "i"])
+</ParamField>
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. If empty, analyzes ALL masters and returns per-master results.
+</ParamField>
+
+## Return Value
+
+Returns a formatted markdown report with:
+
+- Reference glyphs and their density values
+- Table of non-passing glyphs with deviation from expected density
+- Per-glyph verdicts
+- Summary statistics
+
+## Verdict System
+
+<AccordionGroup>
+  <Accordion title="pass" icon="circle-check" iconType="solid">
+    Density within expected tolerance. Marked **green (4)** in GlyphsApp.
+  </Accordion>
+  
+  <Accordion title="compensation" icon="triangle-exclamation" iconType="solid">
+    Expected optical compensation (e.g., round forms darker than straight). Marked **yellow (3)** in GlyphsApp.
+    
+    Only flagged if OUTSIDE the expected range for this compensation type.
+  </Accordion>
+  
+  <Accordion title="inconsistent" icon="circle-xmark" iconType="solid">
+    Density deviation exceeds industry norms. Marked **red (0)** in GlyphsApp.
+  </Accordion>
+  
+  <Accordion title="unreliable" icon="circle-question" iconType="solid">
+    Measurement unreliable due to glyph shape. Marked **orange (1)** in GlyphsApp.
+  </Accordion>
+</AccordionGroup>
+
+## Color Marking System
+
+<Info>
+  Results are automatically marked in GlyphsApp:
+  - **Red (0)** = inconsistent density
+  - **Orange (1)** = unreliable measurement
+  - **Yellow (3)** = optical compensation (expected)
+  - **Green (4)** = pass
+  
+  If analyzing all masters, glyph color = worst verdict across all masters.
+</Info>
+
+## Reference Glyphs
+
+- **Lowercase**: n (straight stem reference)
+- **Uppercase**: H (straight stem reference)
+
+## Examples
+
+### Compare lowercase letters
+
+```python
+lowercase = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"]
+report = compare_color(lowercase)
+print(report)
+```
+
+### Compare uppercase consistency
+
+```python
+uppercase = ["H","I","M","N","O","B","D","E","F","K","L","P","R"]
+report = compare_color(uppercase)
+```
+
+### Check specific master
+
+```python
+masters = get_masters()
+bold_id = masters["masters"][1]["id"]
+
+report = compare_color(["n","o","h","m","i","l"], master_id=bold_id)
+```
+
+### Check figures
+
+```python
+figures = ["zero","one","two","three","four","five","six","seven","eight","nine"]
+report = compare_color(figures)
+```
+
+## Sample Output
+
+```markdown
+## Color Comparison
+
+### Regular
+Reference: n=0.420, H=0.380
+
+| Glyph | Value | Ref | Dev | Verdict |
+|-------|-------|-----|-----|---------|  
+| o | 0.445 | 0.420 | +0.025 | compensation |
+| m | 0.480 | 0.420 | +0.060 | pass |
+| i | 0.390 | 0.420 | -0.030 | pass |
+| w | 0.510 | 0.420 | +0.090 | inconsistent |
+
+**Summary:** pass: 18, compensation: 4, inconsistent: 2
+```
+
+## Expected Density Patterns
+
+Based on analysis of professional fonts:
+
+### Lowercase (relative to n)
+- **o, c, e** (round): 5-10% darker (compensation expected)
+- **m, w** (wide multi-stem): 10-20% darker
+- **i, l, r** (narrow single stem): 5-15% lighter
+- **f, t** (optical): Variable due to design-specific features
+
+### Uppercase (relative to H)
+- **O, C, Q** (round): 5-10% darker (compensation expected)
+- **M, W** (wide): 10-20% darker
+- **I, L** (narrow): 10-20% lighter
+
+## Use Cases
+
+- **Font quality audit**: Check color consistency before final production
+- **After batch operations**: Verify RMX filters didn't create density issues
+- **Design review**: Find glyphs that are visually too light or dark
+- **Multi-master validation**: Ensure color is even across all masters
+
+<Note>
+  If `master_id` is omitted, this tool analyzes ALL masters. The glyph color in GlyphsApp shows the worst verdict across all masters.
+</Note>
+
+## Typographic Color Explained
+
+**Typographic color** refers to the visual darkness/density of text when viewed as a texture. Even color means:
+
+- Consistent visual weight across all glyphs
+- No "holes" (too-light glyphs) or "blots" (too-dark glyphs)
+- Smooth reading texture
+
+Density = ratio of ink (filled area) to white space (bounding box), normalized by zone height.
+
+## Related Tools
+
+- [measure_color](/api/analysis/measure-color) - Measure individual glyph density
+- [audit_font_color](/api/analysis/audit-font-color) - Full font color audit (all glyphs)
+- [compare_stems](/api/analysis/compare-stems) - Compare stem consistency

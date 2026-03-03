@@ -1,0 +1,168 @@
+---
+title: compare_stems
+description: Compare stem thicknesses across multiple glyphs to find inconsistencies
+---
+
+## Overview
+
+Compares stem thicknesses across multiple glyphs and evaluates them against industry stem patterns for optical compensation. Automatically marks glyphs in GlyphsApp with color codes based on verdict.
+
+## Syntax
+
+```python
+compare_stems(
+    glyph_names: list[str],
+    master_id: str = ""
+) -> str
+```
+
+## Parameters
+
+<ParamField path="glyph_names" type="list[str]" required>
+  List of glyph names to compare (e.g., ["H", "I", "L", "n", "m", "h"])
+</ParamField>
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. If empty, analyzes ALL masters and returns per-master results.
+</ParamField>
+
+## Return Value
+
+Returns a formatted markdown report with per-master analysis showing:
+
+- Reference glyphs and their stem values
+- Table of non-passing glyphs with deviation from reference
+- Per-glyph verdicts and notes
+- Summary statistics
+
+## Verdict System
+
+Each glyph receives one of four verdicts:
+
+<AccordionGroup>
+  <Accordion title="pass" icon="circle-check" iconType="solid">
+    Stem within expected tolerance for the glyph's category. Marked **green** in GlyphsApp.
+    
+    The stem thickness matches industry patterns for this type of glyph.
+  </Accordion>
+  
+  <Accordion title="compensation" icon="triangle-exclamation" iconType="solid">
+    Known optical compensation that falls OUTSIDE expected range. Marked **yellow** in GlyphsApp.
+    
+    Examples:
+    - Round stems (o, c, O, C, Q) are typically thicker than straight stems
+    - Bowl mass in b, d, p, q
+    - Only flagged if deviation exceeds industry norms
+  </Accordion>
+  
+  <Accordion title="inconsistent" icon="circle-xmark" iconType="solid">
+    Real issue - deviation exceeds industry norms. Marked **red** in GlyphsApp.
+    
+    Stem thickness is significantly different from expected value for this glyph category.
+  </Accordion>
+  
+  <Accordion title="unreliable" icon="circle-question" iconType="solid">
+    Glyph shape can't be reliably measured. Marked **orange** in GlyphsApp.
+    
+    May occur with complex shapes, heavy decorative elements, or glyphs with unclear stem structure.
+  </Accordion>
+</AccordionGroup>
+
+## Glyph Classification
+
+Glyphs are automatically classified into one of 5 groups:
+
+| Group | Description | Examples |
+|-------|-------------|----------|
+| **straight** | Pure vertical stems | n, h, m, u, i, j, l, r / H, I, L, T, U, F, E, K, J |
+| **round** | Pure round forms | o, c / O, C, Q |
+| **mixed** | Stem + bowl combination | b, d, p, q, g, a, e, s / D, B, P, R, G |
+| **diagonal** | Diagonal strokes | v, w, x, y, z, k / V, W, X, Y, Z, A, M, N |
+| **optical/figure** | Special cases and numbers | t, f / 0-9 |
+
+## Color Marking System
+
+<Info>
+  Results are automatically marked in GlyphsApp's font view:
+  - **Red (0)** = inconsistent
+  - **Orange (1)** = unreliable
+  - **Yellow (3)** = compensation (expected optical adjustment)
+  - **Green (4)** = pass
+  
+  If analyzing all masters, glyph color shows the worst verdict across all masters.
+</Info>
+
+## Reference Glyphs
+
+- **Uppercase**: H (straight vertical stem)
+- **Lowercase**: n (straight vertical stem)
+- **Figures**: H (uses uppercase reference)
+
+## Examples
+
+### Compare all uppercase letters
+
+```python
+uppercase = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
+report = compare_stems(uppercase)
+print(report)
+```
+
+### Compare lowercase stems
+
+```python
+lowercase = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"]
+report = compare_stems(lowercase)
+```
+
+### Check specific master
+
+```python
+# Analyze only the Bold master
+masters = get_masters()
+bold_id = masters["masters"][1]["id"]  # Assuming Bold is second master
+
+report = compare_stems(["H","I","L","E","F"], master_id=bold_id)
+```
+
+### Check figures
+
+```python
+figures = ["zero","one","two","three","four","five","six","seven","eight","nine"]
+report = compare_stems(figures)
+```
+
+## Sample Output
+
+```markdown
+## Stem Comparison
+
+### Regular
+Reference: n=85, H=90
+
+| Glyph | Value | Ref | Dev | Verdict |
+|-------|-------|-----|-----|---------|  
+| o | 92 | 85 | +7 | compensation |
+| b | 88 | 85 | +3 | compensation |
+| c | 90 | 85 | +5 | compensation |
+| f | 72 | 85 | -13 | inconsistent |
+
+**Summary:** compatible: 20, compensation: 3, inconsistent: 1
+```
+
+## Use Cases
+
+- **Font quality audit**: Check all letters before final production
+- **After RMX operations**: Verify that batch filters maintained consistency
+- **Design review**: Find outliers that need manual adjustment
+- **Multi-master validation**: Ensure stems are consistent across all masters
+
+<Note>
+  If `master_id` is omitted, this tool analyzes ALL masters. The glyph color in GlyphsApp shows the worst verdict across all masters (e.g., if "o" passes in Regular but is inconsistent in Bold, it's marked red).
+</Note>
+
+## Related Tools
+
+- [measure_stems](/api/analysis/measure-stems) - Measure individual glyph stems
+- [get_stem_targets](/api/analysis/get-stem-targets) - Get designer's target stem values
+- [compare_color](/api/analysis/compare-color) - Compare typographic color/density

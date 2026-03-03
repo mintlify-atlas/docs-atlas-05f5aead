@@ -1,0 +1,182 @@
+---
+title: Multi-master support
+description: Working with multiple masters in Glyphs MCP
+---
+
+Glyphs MCP fully supports multi-master fonts with per-master operations and cross-master analysis.
+
+## The master_id parameter
+
+All tools that read or write font data accept an optional `master_id` parameter:
+
+- **When omitted**: The tool operates on the first master (index 0)
+- **When provided**: The tool operates on the specified master only
+
+<Tabs>
+  <Tab title="Read tools">
+    When reading data from a specific master:
+
+    ```python
+    # Get glyph data from first master (default)
+    get_glyph("a")
+
+    # Get glyph data from specific master
+    get_glyph("a", master_id="m01")
+    ```
+  </Tab>
+  
+  <Tab title="Write tools">
+    When modifying a specific master:
+
+    ```python
+    # Set width on first master
+    set_glyph_width("a", 600)
+
+    # Set width on specific master
+    set_glyph_width("a", 600, master_id="m01")
+    ```
+  </Tab>
+</Tabs>
+
+## Getting master information
+
+Use the `get_masters` tool to retrieve all masters with their IDs, names, and metrics:
+
+```python
+get_masters()
+```
+
+Returns:
+
+```json
+{
+  "masters": [
+    {
+      "id": "m01",
+      "name": "Light",
+      "ascender": 800,
+      "descender": -200,
+      "xHeight": 500,
+      "capHeight": 700,
+      "axes": {
+        "Weight": 100,
+        "Width": 100
+      }
+    },
+    {
+      "id": "m02",
+      "name": "Bold",
+      "ascender": 800,
+      "descender": -200,
+      "xHeight": 500,
+      "capHeight": 700,
+      "axes": {
+        "Weight": 200,
+        "Width": 100
+      }
+    }
+  ]
+}
+```
+
+<Info>
+  Master IDs are stable identifiers that persist across sessions. Use them to target specific masters reliably.
+</Info>
+
+## Analysis tools and multi-master
+
+Analysis tools have special multi-master behavior:
+
+### Default: Analyze all masters
+
+When `master_id` is **omitted**, analysis tools analyze **ALL masters** and return per-master results:
+
+```python
+# Analyze stems across all masters
+compare_stems(["H", "I", "n", "m"])
+```
+
+Returns per-master results:
+
+```markdown
+## Stem Comparison
+
+### Light
+Reference: H=98, n=95
+
+| Glyph | Value | Ref | Dev | Verdict |
+|-------|-------|-----|-----|---------|
+| I     | 98    | 98  | 0   | pass    |
+
+### Bold
+Reference: H=165, n=162
+
+| Glyph | Value | Ref | Dev | Verdict |
+|-------|-------|-----|-----|---------|
+| I     | 165   | 165 | 0   | pass    |
+```
+
+### Single master analysis
+
+When `master_id` is **provided**, the tool analyzes that master only:
+
+```python
+# Analyze only the Bold master
+compare_stems(["H", "I", "n", "m"], master_id="m02")
+```
+
+## Color marking behavior
+
+When analysis tools mark glyphs with colors in GlyphsApp:
+
+- **All masters analyzed**: The worst verdict across all masters determines the color
+- **Single master analyzed**: Only that master's verdict determines the color
+
+<Note>
+  Color marking uses the worst-verdict-wins approach: if a glyph is `inconsistent` in any master, it gets marked red even if it passes in other masters.
+</Note>
+
+### Color code reference
+
+| Color | Index | Verdict |
+| ----- | ----- | ------- |
+| Red | 0 | Inconsistent (fails check) |
+| Orange | 1 | Unreliable measurement |
+| Yellow | 3 | Optical compensation (expected) |
+| Green | 4 | Pass |
+
+## Master compatibility
+
+Use the `check_compatibility` tool to verify that glyphs are compatible for interpolation:
+
+```python
+check_compatibility()
+```
+
+This checks that paths, nodes, components, and anchors match across all masters for each glyph.
+
+<Warning>
+  Incompatible masters will cause interpolation errors during font export. Run `check_compatibility` regularly during development.
+</Warning>
+
+## RMX Tools and masters
+
+RMX Tools require **2+ masters** to function because they use master interpolation for weight/width adjustments:
+
+```python
+# Requires 2+ masters in the font
+rmx_tune("R", weight=30, master_id="m01")
+```
+
+The `rmx_scale` tool falls back to native affine transforms if RMX is unavailable, which works on single-master fonts.
+
+## Best practices
+
+<Tip>
+  When developing multi-master fonts, regularly run analysis tools without `master_id` to check consistency across all masters.
+</Tip>
+
+- Use `get_masters()` to discover master IDs before targeting specific masters
+- Run cross-master analysis tools (like `check_compatibility`) before exporting
+- When making changes to one master, consider updating related masters to maintain interpolation
+- Use the color marking feature to visually identify glyphs with cross-master issues

@@ -1,0 +1,231 @@
+---
+title: set_feature_code
+description: Create or update an OpenType feature
+---
+
+## Description
+
+Create or update an OpenType feature with AFDKO syntax code. Controls advanced typography features like ligatures, stylistic sets, and contextual alternates.
+
+## Parameters
+
+<ParamField path="feature_name" type="string" required>
+  OpenType feature tag (e.g., "liga", "kern", "ss01", "calt")
+</ParamField>
+
+<ParamField path="code" type="string" required>
+  OpenType feature code in AFDKO syntax
+</ParamField>
+
+<ParamField path="active" type="bool" default="true">
+  Whether the feature is enabled. Default is True.
+</ParamField>
+
+## Returns
+
+Returns a dict with:
+- `ok` (bool): Whether the operation succeeded
+- `feature` (string): The feature tag that was set
+- `active` (bool): Whether the feature is enabled
+- `error` (string): Error message if operation failed
+
+## Common Feature Tags
+
+| Tag | Description |
+|-----|-------------|
+| `liga` | Standard Ligatures (f_i, f_f, f_f_i) |
+| `dlig` | Discretionary Ligatures |
+| `calt` | Contextual Alternates |
+| `ss01`-`ss20` | Stylistic Sets |
+| `salt` | Stylistic Alternates |
+| `kern` | Kerning (usually auto-generated) |
+| `smcp` | Small Capitals |
+| `c2sc` | Capitals to Small Capitals |
+| `case` | Case-Sensitive Forms |
+| `frac` | Fractions |
+| `ordn` | Ordinals |
+| `sups` | Superscript |
+| `subs` | Subscript |
+| `zero` | Slashed Zero |
+| `onum` | Oldstyle Figures |
+| `lnum` | Lining Figures |
+| `tnum` | Tabular Figures |
+| `pnum` | Proportional Figures |
+
+## Examples
+
+### Create standard ligatures
+
+```python
+code = """
+sub f i by f_i;
+sub f f by f_f;
+sub f f i by f_f_i;
+sub f l by f_l;
+"""
+
+result = set_feature_code(
+    feature_name="liga",
+    code=code
+)
+```
+
+### Create a stylistic set
+
+```python
+code = """
+feature ss01 {
+  sub a by a.ss01;
+  sub g by g.ss01;
+} ss01;
+"""
+
+result = set_feature_code(
+    feature_name="ss01",
+    code=code
+)
+```
+
+### Create contextual alternates
+
+```python
+# Alternate 'a' after round letters
+code = """
+lookup a_after_rounds {
+  sub a by a.alt;
+} a_after_rounds;
+
+feature calt {
+  sub [o c e] a' lookup a_after_rounds;
+} calt;
+"""
+
+result = set_feature_code(
+    feature_name="calt",
+    code=code
+)
+```
+
+### Create small capitals feature
+
+```python
+code = """
+sub a by a.sc;
+sub b by b.sc;
+sub c by c.sc;
+# ... etc for all lowercase
+"""
+
+result = set_feature_code(
+    feature_name="smcp",
+    code=code
+)
+```
+
+### Create case-sensitive punctuation
+
+```python
+code = """
+sub hyphen by hyphen.case;
+sub endash by endash.case;
+sub emdash by emdash.case;
+sub parenleft by parenleft.case;
+sub parenright by parenright.case;
+"""
+
+result = set_feature_code(
+    feature_name="case",
+    code=code
+)
+```
+
+### Create feature but keep disabled
+
+```python
+# Create feature but don't activate it yet
+result = set_feature_code(
+    feature_name="dlig",
+    code=discretionary_ligatures_code,
+    active=False
+)
+```
+
+### Update existing feature
+
+```python
+# Get current features
+features = get_features()
+
+# Modify liga code
+current_liga = features.get('liga', '')
+new_liga = current_liga + "\nsub f t by f_t;\n"
+
+# Update
+set_feature_code("liga", new_liga)
+```
+
+## AFDKO Syntax Basics
+
+### Simple substitution
+```
+sub a by a.ss01;
+```
+
+### Multiple substitution (ligature)
+```
+sub f f i by f_f_i;
+```
+
+### Contextual substitution
+```
+sub [o c e] a' by a.alt;
+```
+
+### Classes
+```
+@uppercase = [A-Z];
+@rounds = [o c e];
+sub @rounds a' by a.alt;
+```
+
+### Lookups
+```
+lookup my_substitution {
+  sub a by a.alt;
+} my_substitution;
+```
+
+### Feature block
+```
+feature ss01 {
+  sub a by a.ss01;
+  sub g by g.ss01;
+} ss01;
+```
+
+## Validation
+
+<Warning>
+  Invalid AFDKO syntax will cause the feature to fail. GlyphsApp will show syntax errors when compiling the font.
+</Warning>
+
+### Test your feature code:
+
+1. Use `set_feature_code` to add the feature
+2. Try exporting the font in GlyphsApp
+3. Check the export log for syntax errors
+4. Use the Adobe FDK tools for validation
+
+## Notes
+
+- Feature code uses **AFDKO (Adobe Font Development Kit for OpenType)** syntax
+- Changes are undoable in GlyphsApp with Cmd+Z
+- GlyphsApp auto-generates `kern`, `mark`, and `mkmk` features
+- Use `get_features()` to see all current features
+- Feature order matters - features execute in order
+- Disabled features (`active=False`) are saved but not compiled into exported fonts
+
+## Resources
+
+- [Adobe OpenType Feature File Specification](https://adobe-type-tools.github.io/afdko/OpenTypeFeatureFileSpecification.html)
+- [GlyphsApp Feature Code Tutorial](https://glyphsapp.com/learn/features)

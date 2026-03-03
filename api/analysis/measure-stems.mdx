@@ -1,0 +1,132 @@
+---
+title: measure_stems
+description: Measure stem thicknesses in a glyph using ray-casting
+---
+
+## Overview
+
+Measures vertical and horizontal stem thicknesses in a glyph by casting rays through the outline. This tool provides precise measurements of stroke widths, essential for evaluating the effect of RMX filters or comparing consistency across glyphs.
+
+## Syntax
+
+```python
+measure_stems(
+    glyph_name: str,
+    master_id: str = "",
+    samples: int = 10
+) -> dict
+```
+
+## Parameters
+
+<ParamField path="glyph_name" type="string" required>
+  Name of the glyph to measure (e.g., "R", "n", "H")
+</ParamField>
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. If empty, uses the first master.
+</ParamField>
+
+<ParamField path="samples" type="integer" default="10">
+  Number of horizontal and vertical rays to cast through the glyph
+</ParamField>
+
+## Return Value
+
+Returns a dictionary containing:
+
+- **Dominant values**: Most common vertical and horizontal stem measurements
+- **Min/max range**: Shows consistency within the glyph
+- **Detailed measurements**: Per-ray measurements with positions
+
+```json
+{
+  "ok": true,
+  "glyph": "R",
+  "masterId": "...",
+  "verticalStem": {
+    "dominant": 85,
+    "min": 82,
+    "max": 88,
+    "measurements": [
+      {"position": 120, "thickness": 85},
+      {"position": 240, "thickness": 86}
+    ]
+  },
+  "horizontalStem": {
+    "dominant": 72,
+    "min": 70,
+    "max": 74,
+    "measurements": [...]
+  }
+}
+```
+
+## How It Works
+
+**Ray-casting measurement**:
+- Casts horizontal rays to measure vertical stems (like the main strokes of n, m, h)
+- Casts vertical rays to measure horizontal stems (like crossbars of e, A, H)
+- Reports the most common thickness as the "dominant" value
+- Shows min/max range to indicate stroke consistency
+
+## Examples
+
+### Measure vertical stems
+
+```python
+# Check the stem thickness of uppercase R
+result = measure_stems("R")
+# Returns dominant vertical stem (main stroke) and horizontal stem (crossbar)
+```
+
+### Check crossbar thickness
+
+```python
+# Measure the horizontal stroke of lowercase e
+result = measure_stems("e")
+# Examine horizontalStem.dominant for the crossbar thickness
+```
+
+### Before/after RMX filter comparison
+
+```python
+# Measure before applying RMX Tuner
+before = measure_stems("n")
+print(f"Before: {before['verticalStem']['dominant']}u")
+
+# Apply RMX Tuner to make bolder
+rmx_tune("n", weight=30)
+
+# Measure after
+after = measure_stems("n")
+print(f"After: {after['verticalStem']['dominant']}u")
+```
+
+### Measure specific master
+
+```python
+# Get masters first
+masters = get_masters()
+master_id = masters["masters"][0]["id"]
+
+# Measure stems in that master
+result = measure_stems("H", master_id=master_id)
+```
+
+## Use Cases
+
+- **Verify RMX filter effects**: Measure stems before and after applying filters
+- **Quality control**: Check that stem thicknesses match design intent
+- **Consistency checking**: Compare measurements across related glyphs
+- **Reference values**: Get baseline measurements for compare_stems analysis
+
+<Info>
+  Use this tool BEFORE and AFTER applying RMX filters to verify the effect on stem weights.
+</Info>
+
+## Related Tools
+
+- [compare_stems](/api/analysis/compare-stems) - Compare stems across multiple glyphs
+- [get_stem_targets](/api/analysis/get-stem-targets) - Get designer's intended stem values
+- [rmx_tune](/api/rmx/tune) - Adjust glyph weight (changes stem thickness)

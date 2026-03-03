@@ -1,0 +1,185 @@
+---
+title: check_junctions
+description: Check junction thinning consistency across related glyphs
+---
+
+## Overview
+
+Measures how stems thin at arch/bowl junctions (n, m, h, b, d, p, q, etc.) by sweeping horizontal rays at multiple heights. Reports thinning percentage and checks consistency within groups. Does NOT flag based on absolute values — only inconsistencies between related forms.
+
+## Syntax
+
+```python
+check_junctions(
+    glyph_names: list[str] = None,
+    master_id: str = ""
+) -> str
+```
+
+## Parameters
+
+<ParamField path="glyph_names" type="list[str]" default="None">
+  Optional list of glyphs to check. If not provided, checks default junction glyphs:
+  - **Lowercase**: n, h, m, u, a, b, d, p, q
+</ParamField>
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. If empty, analyzes ALL masters.
+</ParamField>
+
+## Return Value
+
+Returns a formatted markdown report with:
+
+- Per-glyph thinning percentages
+- Mid-stem and junction minimum measurements
+- Group inconsistencies
+- Verdict for each glyph
+
+## Thinning Measurement
+
+**Thinning percentage** indicates how much the stem thins at the junction:
+
+- **100%** = No thinning (junction same width as mid-stem)
+- **90%** = Stem thins to 90% at junction
+- **80%** = Stem thins to 80% at junction
+- **Lower %** = More thinning
+
+<Info>
+  Junction thinning is design-specific. Some fonts have no thinning (100%), others have significant thinning (75-85%). This tool only flags INCONSISTENCIES between related forms, not absolute values.
+</Info>
+
+## Verdict System
+
+<AccordionGroup>
+  <Accordion title="pass" icon="circle-check" iconType="solid">
+    Junction thinning consistent with related glyphs. Marked **green (4)** in GlyphsApp.
+  </Accordion>
+  
+  <Accordion title="group inconsistency" icon="circle-xmark" iconType="solid">
+    Junction thinning differs from related forms. Marked **red (0)** in GlyphsApp.
+    
+    Example: n=85%, m=85%, h=92% → h flagged
+  </Accordion>
+</AccordionGroup>
+
+## Color Marking System
+
+<Info>
+  Results are automatically marked in GlyphsApp:
+  - **Red (0)** = group inconsistency
+  - **Green (4)** = pass
+  
+  If analyzing all masters, glyph color = worst verdict across all masters.
+</Info>
+
+## Related Junction Groups
+
+These glyphs should have consistent junction thinning:
+
+### Arch junctions
+- **n, m**: Arch connecting to stem
+- **h**: Ascender arch (should match n, m)
+- **u**: Inverted arch
+
+### Bowl junctions
+- **b, p**: Ascender/descender bowl junctions
+- **d, q**: Ascender/descender bowl junctions (mirrored)
+- **a**: Bowl junction
+
+## Examples
+
+### Check all junction glyphs
+
+```python
+report = check_junctions()
+print(report)
+# Checks n, h, m, u, a, b, d, p, q
+```
+
+### Check arch junctions only
+
+```python
+report = check_junctions(glyph_names=["n", "m", "h", "u"])
+```
+
+### Check bowl junctions
+
+```python
+report = check_junctions(glyph_names=["b", "d", "p", "q", "a"])
+```
+
+### Check specific master
+
+```python
+masters = get_masters()
+bold_id = masters["masters"][1]["id"]
+
+report = check_junctions(master_id=bold_id)
+```
+
+## Sample Output
+
+```markdown
+## Junction Thinning
+
+### Regular
+
+| Glyph | Thinning % | Mid stem | Junction min |
+|-------|------------|----------|--------------|  
+| n | 85% | 85 | 72 |
+| m | 85% | 85 | 72 |
+| h | 92% | 85 | 78 |
+| u | 84% | 85 | 71 |
+| b | 88% | 85 | 75 |
+| d | 88% | 85 | 75 |
+
+**Group n,m,h:** h (92%) inconsistent with n,m (85%)
+```
+
+## How It Works
+
+1. **Sweeps horizontal rays**: Casts rays at multiple heights through the glyph
+2. **Finds mid-stem thickness**: Measures stem thickness away from junctions
+3. **Finds junction minimum**: Measures thinnest point at arch/bowl junction
+4. **Calculates thinning**: `(junction_min / mid_stem) × 100`
+5. **Checks groups**: Ensures related glyphs have consistent thinning percentages
+6. **Marks glyphs**: Red for group inconsistencies
+
+## Junction Detection
+
+```
+  n:
+  │  ╭─    ← Junction: stem meets arch
+  │  │
+  │  │      Mid-stem: measured here
+  │  │
+  └──┘
+```
+
+The tool measures:
+- **Mid-stem**: Straight vertical section (baseline reference)
+- **Junction min**: Thinnest point where arch/bowl meets stem
+
+## Use Cases
+
+- **Consistency check**: Ensure n, m, h have matching junction thinning
+- **Design review**: Verify bowl junctions (b, d, p, q) are consistent
+- **After RMX operations**: Check that filters maintained junction relationships
+- **Style validation**: Ensure thinning is consistent across related forms
+
+<Note>
+  This tool does NOT judge whether your thinning amount is "correct" — junction thinning is a design decision. It only flags inconsistencies between glyphs that should match (e.g., n and m).
+</Note>
+
+## Typical Thinning Values
+
+- **No thinning**: 95-100% (geometric/sans-serif)
+- **Moderate thinning**: 85-95% (humanist sans, some serifs)
+- **Heavy thinning**: 75-85% (calligraphic, display fonts)
+
+## Related Tools
+
+- [compare_stems](/api/analysis/compare-stems) - Check stem consistency
+- [measure_stems](/api/analysis/measure-stems) - Measure individual glyph stems
+- [check_related_forms](/api/analysis/check-related-forms) - Check related glyph relationships

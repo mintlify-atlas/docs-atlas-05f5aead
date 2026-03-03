@@ -1,0 +1,88 @@
+---
+title: rmx_harmonize
+description: Optimize bezier curves using RMX Harmonizer
+---
+
+## Overview
+
+Optimize bezier curves on a glyph using RMX Harmonizer. Use after drawing or modifying paths to ensure clean curves.
+
+**Works on any glyph** — no multi-master requirement.
+
+## Signature
+
+```python
+rmx_harmonize(
+    glyph_name: str,
+    mode: str = "harmonize",
+    master_id: str = ""
+) -> dict
+```
+
+## Parameters
+
+<ParamField path="glyph_name" type="string" required>
+  Name of the glyph to harmonize
+</ParamField>
+
+<ParamField path="mode" type="string" default="harmonize">
+  Harmonization mode. Available modes:
+  - `"harmonize"` - Full curve optimization (recommended default)
+  - `"dekink"` - Only fix kinks at smooth connections
+  - `"extract handles"` - Reset handles to default positions
+  - `"supersmooth diagonals"` - Extra smoothing on diagonal segments
+  - `"supersmooth all"` - Maximum smoothing everywhere
+</ParamField>
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. If empty, uses the first master
+</ParamField>
+
+## When to Use
+
+Use `rmx_harmonize` after:
+- Drawing new paths
+- Modifying existing outlines
+- Importing shapes from other sources
+- Any time you need to ensure clean, optimized bezier curves
+
+## Usage Examples
+
+### Basic harmonization
+
+```python
+# Full curve optimization (recommended)
+rmx_harmonize("a")
+```
+
+### Fix only kinks
+
+```python
+# Only fix kinks at smooth connections
+rmx_harmonize("a", mode="dekink")
+```
+
+### Maximum smoothing
+
+```python
+# Apply maximum smoothing everywhere
+rmx_harmonize("S", mode="supersmooth all")
+```
+
+### Smooth diagonals only
+
+```python
+# Extra smoothing on diagonal segments
+rmx_harmonize("v", mode="supersmooth diagonals")
+```
+
+### Reset handles
+
+```python
+# Reset handles to default positions
+rmx_harmonize("o", mode="extract handles")
+```
+
+## Response
+
+Returns a dictionary with the operation result and any messages from the RMX Harmonizer filter.

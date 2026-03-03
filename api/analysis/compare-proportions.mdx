@@ -1,0 +1,216 @@
+---
+title: compare_proportions
+description: Compare width proportions across glyphs within a font
+---
+
+## Overview
+
+Compares width proportions across glyphs and checks three things:
+1. **Related-form groups**: b≈d≈p≈q (mirrored), h≈n≈u (arch), O≈Q, etc.
+2. **Width ordering**: m>n>r, W>H>I — flags violations
+3. **Industry ranges**: Compares against data from 18 professional fonts — flags outliers
+
+## Syntax
+
+```python
+compare_proportions(
+    glyph_names: list[str] = None,
+    master_id: str = ""
+) -> str
+```
+
+## Parameters
+
+<ParamField path="glyph_names" type="list[str]" default="None">
+  Optional list of glyphs to check. If not provided, checks all uppercase, lowercase, and figures.
+</ParamField>
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. If empty, analyzes ALL masters.
+</ParamField>
+
+## Return Value
+
+Returns a formatted markdown report with:
+
+- Reference glyph widths (n for lowercase, H for uppercase/figures)
+- Group inconsistencies (related forms that should match)
+- Width ordering violations (m should be wider than n, etc.)
+- Industry range outliers (glyphs outside typical width ranges)
+- Summary statistics
+
+## Verdict System
+
+Glyphs are marked based on severity:
+
+<AccordionGroup>
+  <Accordion title="pass" icon="circle-check" iconType="solid">
+    Width proportions match expectations. Marked **green (4)** in GlyphsApp.
+  </Accordion>
+  
+  <Accordion title="group inconsistency" icon="circle-xmark" iconType="solid">
+    Related forms have different widths. Marked **red (0)** in GlyphsApp.
+    
+    Example: b=580u, d=580u, p=590u, q=585u → p and q flagged
+  </Accordion>
+  
+  <Accordion title="ordering violation" icon="circle-xmark" iconType="solid">
+    Width order is wrong (e.g., r wider than n). Marked **red (0)** in GlyphsApp.
+  </Accordion>
+  
+  <Accordion title="outside industry range" icon="triangle-exclamation" iconType="solid">
+    Width ratio outside typical range from professional fonts. Marked **yellow (3)** in GlyphsApp.
+    
+    Informational — may be intentional design choice.
+  </Accordion>
+</AccordionGroup>
+
+## Color Marking System
+
+<Info>
+  Results are automatically marked in GlyphsApp:
+  - **Red (0)** = group inconsistency or ordering violation
+  - **Yellow (3)** = outside industry range
+  - **Green (4)** = pass
+  
+  If analyzing all masters, glyph color = worst verdict across all masters.
+</Info>
+
+## Reference Glyphs
+
+- **Lowercase**: n (straight stem reference)
+- **Uppercase**: H (straight stem reference)
+- **Figures**: H (uses uppercase reference)
+
+## Related-Form Groups
+
+These glyphs should have matching or very similar widths:
+
+### Lowercase
+- **Mirrored**: b ≈ d ≈ p ≈ q
+- **Arch**: h ≈ n ≈ u
+- **Round**: o ≈ c
+
+### Uppercase
+- **Mirrored**: B ≈ D ≈ P (bowls)
+- **Round**: O ≈ Q ≈ C
+- **Narrow**: I ≈ J
+
+## Width Ordering Rules
+
+These width relationships should hold:
+
+### Lowercase
+- m > n > r (multi-stem > single-stem > reduced-stem)
+- w > v (multi-diagonal > single-diagonal)
+- o > c (closed > open)
+
+### Uppercase
+- W > M > N > H > I (wide diagonal > wide straight > medium > narrow)
+- O > C (closed > open)
+
+## Examples
+
+### Check all glyphs
+
+```python
+report = compare_proportions()
+print(report)
+# Checks all uppercase, lowercase, and figures
+```
+
+### Check lowercase only
+
+```python
+lowercase = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"]
+report = compare_proportions(glyph_names=lowercase)
+```
+
+### Check specific glyphs
+
+```python
+# Check mirrored forms
+report = compare_proportions(glyph_names=["b", "d", "p", "q"])
+```
+
+### Check specific master
+
+```python
+masters = get_masters()
+bold_id = masters["masters"][1]["id"]
+
+report = compare_proportions(master_id=bold_id)
+```
+
+## Sample Output
+
+```markdown
+## Width Proportions
+
+### Regular
+Reference: n=580u, H=720u
+
+**Group inconsistencies (2):**
+
+| Group | Issue |
+|-------|-------|
+| b,d,p,q | p (590u) and q (585u) don't match b,d (580u) |
+| h,n,u | h (575u) doesn't match n,u (580u) |
+
+**Ordering violations (1):**
+
+- r (585u) should be narrower than n (580u)
+
+**Outside industry range (3):**
+
+| Glyph | Ratio | Expected |
+|-------|-------|----------|
+| w | 165% | 130-155% |
+| i | 45% | 50-65% |
+| m | 180% | 155-175% |
+```
+
+## Industry Range Data
+
+Width ratios are compared against analysis of 18 professional fonts:
+
+### Lowercase (as % of n width)
+- **i**: 50-65%
+- **l**: 50-65%
+- **r**: 60-75%
+- **m**: 155-175%
+- **w**: 130-155%
+- **o**: 95-105%
+
+### Uppercase (as % of H width)
+- **I**: 30-45%
+- **M**: 130-145%
+- **W**: 140-160%
+- **O**: 95-115%
+
+<Note>
+  Being outside the industry range is informational only — it may be an intentional design choice (e.g., a condensed or extended style). Group inconsistencies and ordering violations are stronger signals of issues.
+</Note>
+
+## Use Cases
+
+- **Consistency check**: Ensure mirrored forms have matching widths
+- **Design review**: Catch width ordering mistakes (r wider than n, etc.)
+- **Style validation**: Verify proportions are within professional norms
+- **Multi-master validation**: Ensure width relationships hold across masters
+
+## How It Works
+
+1. **Measures widths**: Gets advance width for each glyph
+2. **Calculates ratios**: Width as percentage of reference (n or H)
+3. **Checks groups**: Compares widths within related-form groups
+4. **Checks ordering**: Verifies expected width relationships (m>n>r, etc.)
+5. **Checks ranges**: Compares ratios against industry data
+6. **Marks glyphs**: Red for structural issues, yellow for range outliers
+
+## Related Tools
+
+- [get_glyph](/api/read/get-glyph) - Get glyph width and metrics
+- [set_glyph_width](/api/write/set-glyph-width) - Adjust glyph width
+- [rmx_scale](/api/rmx/scale) - Scale glyph width
+- [check_diagonal_weights](/api/analysis/check-diagonal-weights) - Check diagonal stroke weights

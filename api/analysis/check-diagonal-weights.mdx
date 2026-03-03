@@ -1,0 +1,188 @@
+---
+title: check_diagonal_weights
+description: Check diagonal stroke weight consistency and ratio to vertical stems
+---
+
+## Overview
+
+Measures perpendicular thickness of diagonal strokes (V, A, W, X, Y, Z, v, w, x, y, z, k, M, N) and checks:
+1. **Related diagonal groups are consistent**: V≈A≈W, v≈w≈y, etc.
+2. **Diagonal/straight ratio within professional range**: Typically 85-100%
+
+## Syntax
+
+```python
+check_diagonal_weights(
+    glyph_names: list[str] = None,
+    master_id: str = ""
+) -> str
+```
+
+## Parameters
+
+<ParamField path="glyph_names" type="list[str]" default="None">
+  Optional list of glyphs to check. If not provided, checks all diagonal glyphs:
+  - **Uppercase**: V, A, W, X, Y, Z, M, N
+  - **Lowercase**: v, w, x, y, z, k
+</ParamField>
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. If empty, analyzes ALL masters.
+</ParamField>
+
+## Return Value
+
+Returns a formatted markdown report with:
+
+- Per-glyph diagonal measurements
+- Reference straight stem values
+- Diagonal-to-straight ratio percentages
+- Group inconsistencies
+- Verdict for each glyph
+
+## Verdict System
+
+<AccordionGroup>
+  <Accordion title="pass" icon="circle-check" iconType="solid">
+    Diagonal weight within expected range. Marked **green (4)** in GlyphsApp.
+  </Accordion>
+  
+  <Accordion title="group inconsistency" icon="circle-xmark" iconType="solid">
+    Related diagonals have different weights. Marked **red (0)** in GlyphsApp.
+    
+    Example: V=82u, A=82u, W=88u → W flagged
+  </Accordion>
+  
+  <Accordion title="ratio outside range" icon="triangle-exclamation" iconType="solid">
+    Diagonal/straight ratio outside 85-100%. Marked **yellow (3)** in GlyphsApp.
+    
+    Informational — may be intentional design choice.
+  </Accordion>
+</AccordionGroup>
+
+## Color Marking System
+
+<Info>
+  Results are automatically marked in GlyphsApp:
+  - **Red (0)** = group inconsistency
+  - **Yellow (3)** = ratio outside professional range
+  - **Green (4)** = pass
+  
+  If analyzing all masters, glyph color = worst verdict across all masters.
+</Info>
+
+## Related Diagonal Groups
+
+These glyphs should have consistent diagonal weights:
+
+### Uppercase
+- **V, A, W**: Main wide diagonals
+- **M, N**: Vertical-diagonal hybrids
+- **X, Y, Z**: Crossing/branching diagonals
+
+### Lowercase
+- **v, w, y**: Main diagonals
+- **x, z**: Crossing diagonals
+- **k**: Diagonal branches
+
+## Expected Ratio Range
+
+**Diagonal-to-straight ratio**: 85-100%
+
+- **85-90%**: Diagonals significantly thinner (common in text fonts)
+- **90-95%**: Moderate optical compensation
+- **95-100%**: Diagonals nearly match verticals
+- **>100%**: Diagonals thicker than verticals (rare, display fonts)
+
+<Note>
+  Diagonals are typically thinner than vertical stems to compensate for the optical illusion that makes diagonals appear heavier.
+</Note>
+
+## Examples
+
+### Check all diagonal glyphs
+
+```python
+report = check_diagonal_weights()
+print(report)
+# Checks all uppercase and lowercase diagonals
+```
+
+### Check uppercase diagonals
+
+```python
+uppercase_diagonals = ["V", "A", "W", "X", "Y", "Z", "M", "N"]
+report = check_diagonal_weights(glyph_names=uppercase_diagonals)
+```
+
+### Check lowercase diagonals
+
+```python
+lowercase_diagonals = ["v", "w", "x", "y", "z", "k"]
+report = check_diagonal_weights(glyph_names=lowercase_diagonals)
+```
+
+### Check specific master
+
+```python
+masters = get_masters()
+bold_id = masters["masters"][1]["id"]
+
+report = check_diagonal_weights(master_id=bold_id)
+```
+
+## Sample Output
+
+```markdown
+## Diagonal Weights
+
+### Regular
+
+| Glyph | Stem | Ref | Ratio | Verdict |
+|-------|------|-----|-------|---------|  
+| V | 82 | 90 | 91% | pass |
+| A | 82 | 90 | 91% | pass |
+| W | 88 | 90 | 98% | group inconsistency |
+| v | 78 | 85 | 92% | pass |
+| w | 78 | 85 | 92% | pass |
+| x | 75 | 85 | 88% | pass |
+
+**Group V,A,W:** W (88u) inconsistent with V,A (82u)
+```
+
+## How It Works
+
+1. **Measures diagonals**: Uses perpendicular ray-casting to measure diagonal stroke thickness
+2. **Gets reference stems**: Measures vertical stems from H (uppercase) or n (lowercase)
+3. **Calculates ratios**: Diagonal / vertical × 100
+4. **Checks groups**: Ensures related diagonals have consistent weights
+5. **Checks ranges**: Compares ratios to professional font data (85-100%)
+6. **Marks glyphs**: Red for group issues, yellow for range outliers
+
+## Diagonal Measurement Method
+
+**Perpendicular thickness**: Measures the stroke width perpendicular to the diagonal direction, not the vertical/horizontal thickness. This gives the true optical weight of the diagonal stroke.
+
+```
+  /|    ← Diagonal stroke
+ / |    
+/  |    ← Perpendicular measurement
+   ↕ thickness
+```
+
+## Use Cases
+
+- **Optical compensation check**: Verify diagonals are optically corrected
+- **Consistency validation**: Ensure V, A, W have matching diagonal weights
+- **After RMX operations**: Check that filters maintained diagonal consistency
+- **Multi-master validation**: Ensure diagonal ratios hold across masters
+
+<Info>
+  Diagonal optical compensation is critical for even text color. Diagonals that match vertical stem weight appear too heavy due to optical illusion.
+</Info>
+
+## Related Tools
+
+- [compare_stems](/api/analysis/compare-stems) - Check vertical/horizontal stems
+- [measure_stems](/api/analysis/measure-stems) - Measure individual glyph stems
+- [rmx_tune](/api/rmx/tune) - Adjust weight (affects diagonal thickness)

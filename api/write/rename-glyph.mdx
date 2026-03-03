@@ -1,0 +1,100 @@
+---
+title: rename_glyph
+description: Rename a glyph
+---
+
+## Description
+
+Rename a glyph. Fails if new name already exists in the font.
+
+## Parameters
+
+<ParamField path="glyph_name" type="string" required>
+  Current name of the glyph
+</ParamField>
+
+<ParamField path="new_name" type="string" required>
+  New name for the glyph. Must not already exist in the font.
+</ParamField>
+
+## Returns
+
+Returns a dict with:
+- `ok` (bool): Whether the operation succeeded
+- `oldName` (string): The original glyph name
+- `newName` (string): The new glyph name
+- `error` (string): Error message if operation failed (e.g., name already exists)
+
+## Examples
+
+### Rename a glyph
+
+```python
+result = rename_glyph(
+    glyph_name="a",
+    new_name="a.old"
+)
+```
+
+### Rename to create stylistic alternate
+
+```python
+# Rename current 'g' to 'g.ss01' before creating new 'g'
+result = rename_glyph(
+    glyph_name="g",
+    new_name="g.ss01"
+)
+```
+
+### Rename with error handling
+
+```python
+result = rename_glyph("A", "A.old")
+
+if result.get('ok'):
+    print(f"Renamed {result['oldName']} to {result['newName']}")
+else:
+    print(f"Error: {result.get('error')}")
+```
+
+### Batch rename with suffix
+
+```python
+# Rename all uppercase to .old versions
+for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+    result = rename_glyph(letter, f"{letter}.old")
+    if not result.get('ok'):
+        print(f"Failed to rename {letter}: {result.get('error')}")
+```
+
+## Naming Conventions
+
+GlyphsApp uses naming conventions for automatic feature generation:
+
+### Stylistic Sets
+- `a.ss01`, `a.ss02`, etc. - Stylistic Set alternates
+
+### OpenType Features
+- `.salt` - Stylistic Alternates
+- `.swsh` - Swash variants
+- `.init` - Initial forms
+- `.fina` - Final forms
+- `.medi` - Medial forms
+
+### Case Variants
+- `.sc` - Small caps
+- `.c2sc` - Caps to small caps
+
+### Ligatures
+- `f_i`, `f_f_i` - Ligature components separated by underscore
+
+### Suffixes
+- `.old` - Backup/old version
+- `.alt` - Generic alternate
+
+## Notes
+
+- Operation fails if `new_name` already exists in the font
+- Renaming updates all references (components, kerning groups, etc.)
+- Changes are undoable in GlyphsApp with Cmd+Z
+- Consider using `duplicate_glyph` if you want to keep the original

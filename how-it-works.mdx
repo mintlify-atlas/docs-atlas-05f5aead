@@ -1,0 +1,99 @@
+---
+title: How it works
+description: Understanding the Glyphs MCP architecture and communication flow
+---
+
+Glyphs MCP uses a three-layer architecture to enable AI assistants to interact with GlyphsApp in real-time.
+
+## Architecture overview
+
+```
+MCP Client  ←(stdio/MCP)→  MCP Server  ←(HTTP/localhost)→  GlyphsApp Plugin
+```
+
+The system consists of three components:
+
+1. **MCP Client** — Your AI assistant (Claude Code, Cursor, Windsurf, etc.)
+2. **MCP Server** — A Python process that translates MCP tool calls into HTTP requests
+3. **GlyphsApp Plugin** — An HTTP server running inside GlyphsApp that executes font operations
+
+## Communication flow
+
+<Steps>
+  <Step title="AI assistant invokes MCP tool">
+    When you ask your AI assistant to interact with your font, it calls one of the available MCP tools (like `get_glyph` or `compare_stems`).
+  </Step>
+  
+  <Step title="MCP server receives the request">
+    The MCP server process receives the tool call via stdio and validates the parameters.
+  </Step>
+  
+  <Step title="HTTP request to GlyphsApp plugin">
+    The MCP server translates the tool call into an HTTP request and sends it to `http://127.0.0.1:7745`, where the GlyphsApp plugin is listening.
+  </Step>
+  
+  <Step title="Plugin executes on main thread">
+    The plugin receives the HTTP request and queues the operation to run on GlyphsApp's main thread using a queue + NSTimer bridge for thread safety.
+  </Step>
+  
+  <Step title="Response flows back">
+    The plugin returns the result as JSON via HTTP, the MCP server forwards it back to the AI assistant, and the assistant can use the data or report back to you.
+  </Step>
+</Steps>
+
+## HTTP server details
+
+The GlyphsApp plugin runs an HTTP server on `127.0.0.1:7745` inside GlyphsApp. This localhost-only server:
+
+- Only accepts connections from your local machine (not accessible over the network)
+- Runs on a configurable port (default 7745, set via preferences)
+- Can be started/stopped from the GlyphsApp menu: **Window > GlyphsMCP > Start/Stop Server**
+- Auto-starts when GlyphsApp launches (configurable via preferences)
+
+<Info>
+  All GlyphsApp API calls run on the main thread via a queue + NSTimer bridge to ensure thread safety and prevent race conditions.
+</Info>
+
+## MCP server as translation layer
+
+The MCP server (`glyphs_mcp_server.py`) is a thin translation layer that:
+
+- Receives MCP tool calls via stdio from your AI assistant
+- Validates parameters and formats them as HTTP requests
+- Forwards requests to the GlyphsApp plugin at `http://127.0.0.1:7745`
+- Returns responses back to the AI assistant
+
+The server has no state and does not cache any font data — it's purely a protocol translator.
+
+## Security model
+
+<Warning>
+  The HTTP server only accepts connections from `127.0.0.1` (localhost) and is not accessible from other machines on your network.
+</Warning>
+
+By default, the `execute_in_glyphs` tool is **disabled** for security. You can enable it in GlyphsApp preferences:
+
+```
+com.nico.glyphs-mcp.allowExecute = true
+```
+
+See the [execute_in_glyphs](/api/advanced/execute-in-glyphs) documentation for details.
+
+## Preferences
+
+You can configure the plugin behavior using these preference keys:
+
+| Key | Default | Description |
+| --- | ------- | ----------- |
+| `com.nico.glyphs-mcp.port` | `7745` | HTTP server port |
+| `com.nico.glyphs-mcp.autostart` | `true` | Start server on GlyphsApp launch |
+| `com.nico.glyphs-mcp.allowExecute` | `false` | Enable the execute endpoint |
+
+## Menu access
+
+The plugin adds a **GlyphsMCP** submenu under **Window** in the menu bar:
+
+- **Start/Stop Server** — Toggle the HTTP server
+- **Connect** — Copy ready-to-paste MCP config for Claude Code or VS Code (and forks)
+- **Documentation** — Open documentation in your browser
+- **Allow Execute Endpoint** — Enable `execute_in_glyphs` (off by default for security)

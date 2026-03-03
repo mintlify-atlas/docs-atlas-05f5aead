@@ -1,0 +1,110 @@
+---
+title: delete_glyph
+description: Delete a glyph from the font
+---
+
+## Description
+
+Delete a glyph from the font.
+
+<Warning>
+  This operation **cannot be undone via MCP**. The glyph will be permanently removed. However, you can still undo in GlyphsApp with Cmd+Z immediately after.
+</Warning>
+
+## Parameters
+
+<ParamField path="glyph_name" type="string" required>
+  Name of the glyph to delete
+</ParamField>
+
+## Returns
+
+Returns a dict with:
+- `ok` (bool): Whether the operation succeeded
+- `deleted` (string): The deleted glyph name
+- `error` (string): Error message if operation failed
+
+## Examples
+
+### Delete a single glyph
+
+```python
+result = delete_glyph(glyph_name="test")
+```
+
+### Delete with confirmation
+
+```python
+glyph_to_delete = "a.old"
+
+# Check if glyph exists first
+font_info = get_font_info()
+if glyph_to_delete in font_info.get('glyphs', []):
+    result = delete_glyph(glyph_to_delete)
+    if result.get('ok'):
+        print(f"Deleted {result['deleted']}")
+else:
+    print(f"{glyph_to_delete} not found")
+```
+
+### Batch delete backup glyphs
+
+```python
+# Delete all .backup glyphs
+font_glyphs = list_glyphs()
+
+for glyph in font_glyphs.get('glyphs', []):
+    if glyph['name'].endswith('.backup'):
+        result = delete_glyph(glyph['name'])
+        print(f"Deleted {glyph['name']}")
+```
+
+### Delete test glyphs
+
+```python
+# Clean up test glyphs
+test_glyphs = ["test1", "test2", "test3", "temp"]
+
+for glyph in test_glyphs:
+    result = delete_glyph(glyph)
+    if result.get('ok'):
+        print(f"Deleted {glyph}")
+    else:
+        print(f"Failed to delete {glyph}: {result.get('error')}")
+```
+
+## What Gets Deleted
+
+- The glyph and **all its layers** (across all masters)
+- All **paths and components**
+- All **anchors**
+- **Kerning pairs** involving this glyph
+- **References** in OpenType feature code (may break features)
+
+## Safety Considerations
+
+<Warning>
+  **Before deleting glyphs:**
+  - Consider using `duplicate_glyph` to create a backup first
+  - Check if the glyph is referenced in OpenType features
+  - Verify the glyph isn't used as a component in other glyphs
+  - Save your font file before bulk deletions
+</Warning>
+
+### Create backup before delete
+
+```python
+# Safe deletion with backup
+duplicate_glyph("a", "a.backup")
+delete_glyph("a")
+
+# If you need to restore:
+rename_glyph("a.backup", "a")
+```
+
+## Notes
+
+- Cannot be undone via MCP (but can be undone in GlyphsApp with Cmd+Z)
+- Deleting glyphs referenced in features may break OpenType code
+- Deleting component glyphs may break composite glyphs
+- Use `list_glyphs()` to see all glyphs before deleting

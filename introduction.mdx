@@ -1,0 +1,104 @@
+---
+title: Introduction
+description: AI-assisted type design in GlyphsApp with MCP bridge for Claude, Cursor, and other MCP clients
+---
+
+<img
+  src="/images/glyphs-mcp.png"
+  alt="GlyphsMCP"
+  className="rounded-lg"
+/>
+
+## What is Glyphs MCP?
+
+Glyphs MCP is an MCP bridge for AI-assisted type design in [GlyphsApp](https://glyphsapp.com).
+
+It lets Claude, Cursor, or any MCP client read and write font data directly in GlyphsApp — bidirectional, real-time, live in the editor.
+
+```
+MCP Client  ←(stdio/MCP)→  MCP Server  ←(HTTP/localhost)→  GlyphsApp Plugin
+```
+
+## Key features
+
+<CardGroup cols={2}>
+  <Card
+    title="Read & write font data"
+    icon="pen-to-square"
+    href="/api/read/get-font-info"
+  >
+    Access complete font info, glyph paths, components, anchors, kerning, and OpenType features
+  </Card>
+  <Card
+    title="RMX Tools integration"
+    icon="sliders"
+    href="/api/rmx/harmonize"
+  >
+    Harmonize curves, scale with weight compensation, tune weight/width/height, and adjust to monospace
+  </Card>
+  <Card
+    title="Analysis tools"
+    icon="magnifying-glass-chart"
+    href="/api/analysis/measure-stems"
+  >
+    Measure stems, audit color consistency, check overshoots, analyze proportions, and validate compatibility
+  </Card>
+  <Card
+    title="Multi-master support"
+    icon="layer-group"
+    href="/multi-master-support"
+  >
+    All tools accept optional master_id parameter for precise control across font masters
+  </Card>
+</CardGroup>
+
+## How it works
+
+The GlyphsApp plugin runs an HTTP server on `127.0.0.1:7745` inside GlyphsApp. All GlyphsApp API calls run on the main thread via a queue + NSTimer bridge for thread safety.
+
+The MCP server is a thin translation layer — it receives MCP tool calls via stdio and forwards them as HTTP requests to the plugin.
+
+## Use cases
+
+Ask your AI assistant natural language questions like:
+
+<Tip>
+  "Run a full color audit on my font and tell me which glyphs are inconsistent"
+</Tip>
+
+<Tip>
+  "Compare the stems across all my lowercase letters"
+</Tip>
+
+<Tip>
+  "Make the R 20% wider and harmonize the curves"
+</Tip>
+
+<Tip>
+  "Check if my figures are consistent with my letters"
+</Tip>
+
+## Requirements
+
+- [GlyphsApp 3](https://glyphsapp.com) (tested on 3.2+)
+- An MCP client: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Cursor](https://cursor.sh), [Windsurf](https://windsurf.com), etc.
+- Python 3.10+ with [uv](https://docs.astral.sh/uv/) (recommended) or pip
+
+## Get started
+
+<CardGroup cols={2}>
+  <Card
+    title="Installation"
+    icon="download"
+    href="/installation"
+  >
+    Install the GlyphsApp plugin and connect your MCP client in minutes
+  </Card>
+  <Card
+    title="Quickstart"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Get to your first working example with real font analysis
+  </Card>
+</CardGroup>

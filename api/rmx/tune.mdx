@@ -1,0 +1,142 @@
+---
+title: rmx_tune
+description: Adjust weight, width, height, or slant using RMX Tuner
+---
+
+## Overview
+
+Adjust a glyph's weight, width, height, or slant using RMX Tuner. **USE THIS for qualitative adjustments** like "make bolder" or "add italic slant".
+
+Internally uses master interpolation along the font's weight axis for weight/width/height, and native affine shear for slant. All changes are undoable (Cmd+Z).
+
+<Warning>
+  **Requires 2+ masters in the font.** This tool will not work with single-master fonts.
+</Warning>
+
+<Note>
+  Values are **NOT percentages** — they are relative adjustment deltas in arbitrary units. Typical useful range: **-100 to +100**.
+  
+  For **percentage-based** width/height changes, prefer [`rmx_scale`](/api/rmx/scale) instead.
+</Note>
+
+## Signature
+
+```python
+rmx_tune(
+    glyph_name: str,
+    weight: int = 0,
+    width: int = 0,
+    height: int = 0,
+    slant: int = 0,
+    fixed_width: bool = False,
+    master_id: str = ""
+) -> dict
+```
+
+## Parameters
+
+<ParamField path="glyph_name" type="string" required>
+  Name of the glyph to tune
+</ParamField>
+
+<ParamField path="weight" type="integer" default="0">
+  Stroke weight delta (+ = bolder, - = lighter)
+  
+  Typical range: -100 to +100
+</ParamField>
+
+<ParamField path="width" type="integer" default="0">
+  Horizontal expansion delta (+ = wider, - = narrower)
+  
+  Typical range: -100 to +100
+</ParamField>
+
+<ParamField path="height" type="integer" default="0">
+  Vertical expansion delta (+ = taller, - = shorter)
+  
+  Typical range: -100 to +100
+</ParamField>
+
+<ParamField path="slant" type="integer" default="0">
+  Italic slant in degrees (+ = right lean)
+  
+  Example: 12 for standard italic slant
+</ParamField>
+
+<ParamField path="fixed_width" type="boolean" default="false">
+  Keep advance width unchanged during adjustment
+  
+  Useful when making weight changes without affecting spacing
+</ParamField>
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. If empty, uses the first master
+</ParamField>
+
+## When to Use
+
+Use `rmx_tune` for **qualitative** adjustments:
+- "Make R bolder"
+- "Make R lighter"
+- "Add italic slant"
+- "Make bolder but keep same width"
+
+**Key difference from rmx_scale:**
+- **`rmx_tune`** - Delta values in arbitrary units (-100 to +100 typical)
+- **`rmx_scale`** - Percentage-based (100 = unchanged, 130 = 30% wider)
+
+## Usage Examples
+
+### Make a glyph bolder
+
+```python
+# Make R bolder
+rmx_tune("R", weight=30)
+```
+
+### Make a glyph lighter
+
+```python
+# Make R much lighter
+rmx_tune("R", weight=-50)
+```
+
+### Add italic slant
+
+```python
+# Add 12° italic slant to R
+rmx_tune("R", slant=12)
+```
+
+### Make bolder with fixed width
+
+```python
+# Make R bolder but keep same width
+rmx_tune("R", weight=30, fixed_width=True)
+```
+
+### Adjust width only
+
+```python
+# Make wider (qualitative adjustment)
+rmx_tune("R", width=40)
+```
+
+### Combine adjustments
+
+```python
+# Make bolder and add slant
+rmx_tune("R", weight=25, slant=12)
+```
+
+## Response
+
+Returns a dictionary with:
+- Width before and after the adjustment
+- Operation result and messages
+
+## Requirements
+
+<Warning>
+  This tool requires 2+ masters in the font. Single-master fonts are not supported.
+</Warning>

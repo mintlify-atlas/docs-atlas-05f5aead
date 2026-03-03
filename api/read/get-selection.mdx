@@ -1,0 +1,100 @@
+---
+title: get_selection
+description: Get the user's current selection in GlyphsApp's editor
+---
+
+## Description
+
+Get the user's current selection in GlyphsApp's editor.
+
+Returns the active glyph name, layer, and any selected paths or nodes. Returns null selection if no tab or layer is active.
+
+## Parameters
+
+This tool takes no parameters.
+
+## Returns
+
+<ResponseField name="glyphName" type="string">
+  Name of the currently active glyph (null if no tab open)
+</ResponseField>
+
+<ResponseField name="layerId" type="string">
+  ID of the active layer/master
+</ResponseField>
+
+<ResponseField name="layerName" type="string">
+  Name of the active layer/master
+</ResponseField>
+
+<ResponseField name="selectedPaths" type="array">
+  Indices of selected paths
+</ResponseField>
+
+<ResponseField name="selectedNodes" type="array">
+  Array of selected node objects with path and node indices
+</ResponseField>
+
+<ResponseField name="selectionType" type="string">
+  Type of selection: "none", "paths", "nodes", or "components"
+</ResponseField>
+
+## Usage
+
+```python
+import anthropic
+
+client = anthropic.Client()
+
+response = client.messages.create(
+    model="claude-3-5-sonnet-20241022",
+    max_tokens=1024,
+    tools=[
+        {
+            "type": "mcp",
+            "server_name": "glyphs-mcp",
+            "tool_name": "get_selection",
+        }
+    ],
+    messages=[{"role": "user", "content": "What do I have selected?"}],
+)
+```
+
+```bash
+# Using Claude Code CLI
+get_selection()
+```
+
+## Example Response
+
+```json
+{
+  "glyphName": "A",
+  "layerId": "master01",
+  "layerName": "Light",
+  "selectedPaths": [0],
+  "selectedNodes": [
+    {"pathIndex": 0, "nodeIndex": 2},
+    {"pathIndex": 0, "nodeIndex": 5}
+  ],
+  "selectionType": "nodes"
+}
+```
+
+```json
+{
+  "glyphName": null,
+  "layerId": null,
+  "layerName": null,
+  "selectedPaths": [],
+  "selectedNodes": [],
+  "selectionType": "none"
+}
+```
+
+## Notes
+
+- Useful for context-aware operations based on what the user is currently editing
+- Returns null/empty values when no tab is open or no glyph is active
+- Selection data can be used to apply operations only to selected elements
+- The `selectionType` field helps determine what kind of operation is appropriate

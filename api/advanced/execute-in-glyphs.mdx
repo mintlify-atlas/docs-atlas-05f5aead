@@ -1,0 +1,108 @@
+---
+title: execute_in_glyphs
+description: Execute arbitrary Python code inside GlyphsApp
+---
+
+Execute arbitrary Python code inside GlyphsApp.
+
+The code runs with access to the Glyphs object and all GlyphsApp API.
+stdout is captured and returned. This is powerful but must be used carefully.
+
+<Warning>
+**Security Warning:** This endpoint is disabled by default for security reasons. It allows execution of arbitrary Python code inside GlyphsApp with full access to the GlyphsApp API.
+
+Only enable this if you trust the AI agent and understand the security implications. The user must explicitly enable it in GlyphsApp preferences.
+</Warning>
+
+## Security Model
+
+This endpoint is **disabled by default** and requires manual activation by the user:
+
+1. The endpoint will return an error unless explicitly enabled
+2. User must set the preference: `com.nico.glyphs-mcp.allowExecute = True` in GlyphsApp
+3. This preference can be set via the GlyphsApp Preferences or programmatically
+
+To enable this endpoint, see the README menu section about enabling execute endpoint.
+
+## Parameters
+
+<ParamField path="code" type="string" required>
+  Python code to execute inside GlyphsApp. The code runs with access to the `Glyphs` object and all GlyphsApp API. stdout is captured and returned in the response.
+</ParamField>
+
+## Execution Context
+
+The code parameter executes in GlyphsApp's Python environment with:
+
+- Full access to the `Glyphs` object (GlyphsApp's main API entry point)
+- Access to all GlyphsApp scripting API (font, glyphs, layers, paths, etc.)
+- Standard output (print statements) captured and returned
+- Access to any installed GlyphsApp plugins and their APIs
+
+## Response
+
+```json
+{
+  "ok": true,
+  "output": "captured stdout from code execution"
+}
+```
+
+Or if disabled:
+
+```json
+{
+  "ok": false,
+  "error": "Execute endpoint is disabled. Set preference com.nico.glyphs-mcp.allowExecute=True to enable."
+}
+```
+
+## Example Usage
+
+### Print Font Family Name
+
+```python
+execute_in_glyphs("print(Glyphs.font.familyName)")
+```
+
+### Get Font Metrics
+
+```python
+execute_in_glyphs("""
+font = Glyphs.font
+print(f"UPM: {font.upm}")
+print(f"Ascender: {font.selectedFontMaster.ascender}")
+print(f"Descender: {font.selectedFontMaster.descender}")
+""")
+```
+
+### List All Master Names
+
+```python
+execute_in_glyphs("""
+for master in Glyphs.font.masters:
+    print(master.name)
+""")
+```
+
+### Access Advanced GlyphsApp Features
+
+```python
+execute_in_glyphs("""
+# Access plugin APIs or advanced features not exposed via other MCP tools
+font = Glyphs.font
+for glyph in font.glyphs:
+    if glyph.export:
+        print(f"{glyph.name}: {len(glyph.layers)} layers")
+""")
+```
+
+## Enabling the Endpoint
+
+This endpoint must be manually enabled by setting a GlyphsApp preference:
+
+**Preference Key:** `com.nico.glyphs-mcp.allowExecute`
+
+**Value:** `True` (boolean)
+
+See the README documentation for instructions on how to safely enable this endpoint.

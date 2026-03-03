@@ -1,0 +1,105 @@
+---
+title: list_glyphs
+description: List all glyphs in the open font with basic metadata
+---
+
+## Description
+
+List all glyphs in the open font with basic metadata.
+
+Returns glyph names, unicodes, layer count, script, category. Does NOT include path data — use `get_glyph()` for full details.
+
+## Parameters
+
+This tool takes no parameters.
+
+## Returns
+
+<ResponseField name="glyphs" type="array">
+  Array of glyph objects with basic metadata
+  
+  <Expandable title="Glyph object">
+    <ResponseField name="name" type="string">
+      Glyph name (e.g., "a", "A", "uni0041")
+    </ResponseField>
+    
+    <ResponseField name="unicode" type="string">
+      Unicode value in hex format (e.g., "0061")
+    </ResponseField>
+    
+    <ResponseField name="layerCount" type="number">
+      Number of layers (one per master)
+    </ResponseField>
+    
+    <ResponseField name="script" type="string">
+      Script classification (e.g., "latin", "cyrillic")
+    </ResponseField>
+    
+    <ResponseField name="category" type="string">
+      Glyph category (e.g., "Letter", "Number", "Punctuation")
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Usage
+
+```python
+import anthropic
+
+client = anthropic.Client()
+
+response = client.messages.create(
+    model="claude-3-5-sonnet-20241022",
+    max_tokens=1024,
+    tools=[
+        {
+            "type": "mcp",
+            "server_name": "glyphs-mcp",
+            "tool_name": "list_glyphs",
+        }
+    ],
+    messages=[{"role": "user", "content": "List all glyphs in this font"}],
+)
+```
+
+```bash
+# Using Claude Code CLI
+list_glyphs()
+```
+
+## Example Response
+
+```json
+{
+  "glyphs": [
+    {
+      "name": "A",
+      "unicode": "0041",
+      "layerCount": 2,
+      "script": "latin",
+      "category": "Letter"
+    },
+    {
+      "name": "B",
+      "unicode": "0042",
+      "layerCount": 2,
+      "script": "latin",
+      "category": "Letter"
+    },
+    {
+      "name": "a.ss01",
+      "unicode": "",
+      "layerCount": 2,
+      "script": "latin",
+      "category": "Letter"
+    }
+  ]
+}
+```
+
+## Notes
+
+- This is a lightweight operation that returns metadata only
+- Path data is NOT included — use `get_glyph(glyph_name)` to retrieve full glyph details
+- Useful for getting an overview of the font's glyph set before detailed operations
+- The `layerCount` corresponds to the number of masters in the font

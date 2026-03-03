@@ -1,0 +1,131 @@
+---
+title: rmx_scale
+description: Scale a glyph by percentage with optional stroke weight compensation
+---
+
+## Overview
+
+Scale a glyph by percentage in width and/or height. **USE THIS for percentage-based scaling requests** like "make 30% wider".
+
+Tries RMX Scaler first (with stroke weight compensation via master interpolation), then falls back to native affine transform if RMX headless API is unavailable.
+
+<Warning>
+  GlyphsApp 3.5+ changed internal APIs, which may affect RMX Scaler availability. The response includes a `"method"` field indicating which method was used:
+  - `"rmx"` = RMX Scaler was used (stroke weight compensation available)
+  - `"native_transform"` = Affine transform fallback (no weight compensation)
+</Warning>
+
+## Signature
+
+```python
+rmx_scale(
+    glyph_name: str,
+    width: int = 100,
+    height: int = 100,
+    weight: int = 0,
+    adjust_space: int = 0,
+    vertical_shift: int = 0,
+    master_id: str = ""
+) -> dict
+```
+
+## Parameters
+
+<ParamField path="glyph_name" type="string" required>
+  Name of the glyph to scale
+</ParamField>
+
+<ParamField path="width" type="integer" default="100">
+  Width scale as percentage
+  - `100` = no change
+  - `130` = 30% wider
+  - `70` = 30% narrower
+</ParamField>
+
+<ParamField path="height" type="integer" default="100">
+  Height scale as percentage
+  - `100` = no change
+  - `110` = 10% taller
+  - `90` = 10% shorter
+</ParamField>
+
+<ParamField path="weight" type="integer" default="0">
+  Stroke weight delta (RMX only, ignored in native fallback)
+</ParamField>
+
+<ParamField path="adjust_space" type="integer" default="0">
+  Sidebearing adjustment delta in units
+</ParamField>
+
+<ParamField path="vertical_shift" type="integer" default="0">
+  Vertical position offset in units
+</ParamField>
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. If empty, uses the first master
+</ParamField>
+
+## When to Use
+
+Use `rmx_scale` for **percentage-based** width/height changes:
+- "Make R 30% wider"
+- "Scale to 90% height"
+- "Make 20% narrower"
+
+<Note>
+  For **qualitative** adjustments like "make bolder" or "add italic slant", use [`rmx_tune`](/api/rmx/tune) instead. The key difference:
+  - **`rmx_scale`** - Percentage-based (100 = unchanged)
+  - **`rmx_tune`** - Delta values in arbitrary units (-100 to +100 typical)
+</Note>
+
+## Usage Examples
+
+### Make a glyph wider
+
+```python
+# Make R 30% wider
+rmx_scale("R", width=130)
+```
+
+### Make a glyph narrower
+
+```python
+# Make R 20% narrower
+rmx_scale("R", width=80)
+```
+
+### Scale height only
+
+```python
+# Scale R to 90% height, keep width unchanged
+rmx_scale("R", height=90)
+```
+
+### Scale both dimensions
+
+```python
+# Make smaller overall
+rmx_scale("R", width=80, height=80)
+```
+
+### Scale with spacing adjustment
+
+```python
+# Make wider and adjust sidebearings
+rmx_scale("R", width=120, adjust_space=20)
+```
+
+## Response
+
+Returns a dictionary with:
+- `method` - Either `"rmx"` or `"native_transform"` indicating which scaling method was used
+- Operation result and messages
+
+## RMX vs Native Fallback
+
+The tool automatically handles the fallback:
+
+1. **First attempt**: RMX Scaler with stroke weight compensation
+2. **Fallback**: Native affine transform if RMX API unavailable
+
+Check the `method` field in the response to see which was used. The `weight` parameter only works with RMX Scaler and is ignored in native fallback mode.

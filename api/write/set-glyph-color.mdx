@@ -1,0 +1,106 @@
+---
+title: set_glyph_color
+description: Set the color label of a glyph in the font view
+---
+
+## Description
+
+Set the color label of a glyph in the font view. Useful for marking glyphs by status, category, or to indicate work needed.
+
+## Parameters
+
+<ParamField path="glyph_name" type="string" required>
+  Name of the glyph to color
+</ParamField>
+
+<ParamField path="color" type="int" required>
+  Color index (0-11). See color table below.
+</ParamField>
+
+## Color Index Reference
+
+| Index | Color |
+|-------|-------|
+| 0 | Red |
+| 1 | Orange |
+| 2 | Brown |
+| 3 | Yellow |
+| 4 | Light green |
+| 5 | Dark green |
+| 6 | Teal |
+| 7 | Blue |
+| 8 | Purple |
+| 9 | Pink |
+| 10 | Light gray |
+| 11 | Charcoal |
+
+**To remove color**: Set any value outside 0-11 range (e.g., -1 or 99)
+
+## Returns
+
+Returns a dict with:
+- `ok` (bool): Whether the operation succeeded
+- `glyph` (string): The modified glyph name
+- `color` (int): The color index that was set
+- `error` (string): Error message if operation failed
+
+## Examples
+
+### Mark glyph as needing work (red)
+
+```python
+result = set_glyph_color(
+    glyph_name="A",
+    color=0  # Red
+)
+```
+
+### Mark glyph as complete (green)
+
+```python
+result = set_glyph_color(
+    glyph_name="A",
+    color=4  # Light green
+)
+```
+
+### Remove color
+
+```python
+result = set_glyph_color(
+    glyph_name="A",
+    color=-1  # No color
+)
+```
+
+### Color-code glyph categories
+
+```python
+# Mark all uppercase letters blue
+for glyph in uppercase_letters:
+    set_glyph_color(glyph, 7)  # Blue
+
+# Mark all alternates purple
+for glyph in alternates:
+    set_glyph_color(glyph, 8)  # Purple
+```
+
+### Mark analysis results
+
+```python
+# After running stem analysis
+for issue in stem_issues:
+    if issue['verdict'] == 'inconsistent':
+        set_glyph_color(issue['glyph'], 0)  # Red
+    elif issue['verdict'] == 'compensation':
+        set_glyph_color(issue['glyph'], 3)  # Yellow
+    else:
+        set_glyph_color(issue['glyph'], 4)  # Green
+```
+
+## Notes
+
+- Colors are visible in GlyphsApp's font view grid
+- Many analysis tools (like `compare_stems`, `compare_color`) automatically set colors
+- Use color coding to track workflow status or categorize glyphs
+- Changes are undoable in GlyphsApp with Cmd+Z

@@ -1,0 +1,120 @@
+---
+title: get_kerning
+description: Get kerning pairs for a specific master
+---
+
+## Description
+
+Get kerning pairs for a specific master (or first master if not specified).
+
+## Parameters
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. If empty, returns kerning for the first master.
+</ParamField>
+
+## Returns
+
+<ResponseField name="masterId" type="string">
+  ID of the master these kerning pairs belong to
+</ResponseField>
+
+<ResponseField name="masterName" type="string">
+  Name of the master
+</ResponseField>
+
+<ResponseField name="pairs" type="array">
+  Array of kerning pair objects
+  
+  <Expandable title="Kerning pair object">
+    <ResponseField name="left" type="string">
+      Left glyph name or group (e.g., "A" or "@MMK_L_A")
+    </ResponseField>
+    
+    <ResponseField name="right" type="string">
+      Right glyph name or group (e.g., "V" or "@MMK_R_V")
+    </ResponseField>
+    
+    <ResponseField name="value" type="number">
+      Kerning value in font units (negative = tighter spacing)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="groupCount" type="number">
+  Number of group-to-group kerning pairs
+</ResponseField>
+
+<ResponseField name="exceptionCount" type="number">
+  Number of glyph-specific exception pairs
+</ResponseField>
+
+## Usage
+
+```python
+import anthropic
+
+client = anthropic.Client()
+
+response = client.messages.create(
+    model="claude-3-5-sonnet-20241022",
+    max_tokens=4096,
+    tools=[
+        {
+            "type": "mcp",
+            "server_name": "glyphs-mcp",
+            "tool_name": "get_kerning",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "master_id": {"type": "string"}
+                }
+            }
+        }
+    ],
+    messages=[{"role": "user", "content": "Show me the kerning pairs"}],
+)
+```
+
+```bash
+# Using Claude Code CLI
+get_kerning()
+get_kerning(master_id="master02")
+```
+
+## Example Response
+
+```json
+{
+  "masterId": "master01",
+  "masterName": "Light",
+  "pairs": [
+    {
+      "left": "@MMK_L_A",
+      "right": "@MMK_R_V",
+      "value": -80
+    },
+    {
+      "left": "A",
+      "right": "V",
+      "value": -100
+    },
+    {
+      "left": "T",
+      "right": "o",
+      "value": -40
+    }
+  ],
+  "groupCount": 1,
+  "exceptionCount": 2
+}
+```
+
+## Notes
+
+- Kerning pairs with `@MMK_L_` or `@MMK_R_` prefixes are group-based kerning
+- Group kerning applies to all glyphs in that group
+- Exception pairs (glyph-to-glyph) override group kerning
+- Negative values tighten spacing, positive values loosen it
+- Each master can have different kerning values for the same pair
+- Use `set_kerning_pair()` to add or modify kerning values

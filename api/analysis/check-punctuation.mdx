@@ -1,0 +1,202 @@
+---
+title: check_punctuation
+description: Check punctuation consistency with mirrored pairs, width matches, and ratio checks
+---
+
+## Overview
+
+Checks punctuation consistency based on industry patterns across professional fonts. Validates:
+1. **Width matches**: Mirrored pairs and related marks that should have identical/similar widths
+2. **Width ratios**: Expected relationships (endash 2× hyphen, emdash 2× endash, etc.)
+
+## Syntax
+
+```python
+check_punctuation(master_id: str = "") -> str
+```
+
+## Parameters
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. If empty, analyzes ALL masters.
+</ParamField>
+
+## Return Value
+
+Returns a formatted markdown report with:
+
+- Width mismatches (pairs that should match but don't)
+- Ratio issues (relationships outside expected ranges)
+- Per-pair verdicts
+- Summary statistics
+
+## Width Match Checks
+
+### High severity (must match)
+
+| Left | Right | Requirement |
+|------|-------|-------------|
+| **parenleft** | **parenright** | Mirrored — must match |
+| **bracketleft** | **bracketright** | Mirrored — must match |
+| **braceleft** | **braceright** | Mirrored — must match |
+| **guillemotleft** | **guillemotright** | Mirrored — must match |
+
+### Medium severity (should be similar)
+
+| Left | Right | Requirement |
+|------|-------|-------------|
+| **period** | **comma** | Related forms |
+| **colon** | **semicolon** | Related forms |
+| **quotedblleft** | **quotedblright** | Related forms |
+
+## Ratio Checks
+
+| Pair | Expected Ratio | Traditional |
+|------|----------------|-------------|
+| **endash / hyphen** | ~2.0 | En is 2× hyphen |
+| **emdash / endash** | ~2.0 | Em is 2× en |
+| **quoteright / comma** | ~0.9-1.1 | Similar width |
+| **question / exclam** | >1.0 | Question wider |
+
+<Note>
+  Traditional typographic conventions: en-dash = width of 'n' (~½ em), em-dash = width of 'M' (1 em). Modern digital fonts often deviate from these proportions.
+</Note>
+
+## Verdict System
+
+<AccordionGroup>
+  <Accordion title="pass" icon="circle-check" iconType="solid">
+    Width matches or ratio within expected range. Marked **green (4)** in GlyphsApp.
+  </Accordion>
+  
+  <Accordion title="mirrored pair mismatch" icon="circle-xmark" iconType="solid">
+    Mirrored forms have different widths (high severity). Marked **red (0)** in GlyphsApp.
+  </Accordion>
+  
+  <Accordion title="width warning" icon="triangle-exclamation" iconType="solid">
+    Related forms differ or ratio outside range (medium severity). Marked **yellow (3)** in GlyphsApp.
+  </Accordion>
+</AccordionGroup>
+
+## Color Marking System
+
+<Info>
+  Results are automatically marked in GlyphsApp:
+  - **Red (0)** = mirrored pair mismatch
+  - **Yellow (3)** = width warning or ratio issue
+  - **Green (4)** = pass
+  
+  If analyzing all masters, glyph color = worst verdict across all masters.
+</Info>
+
+## Examples
+
+### Check all punctuation
+
+```python
+report = check_punctuation()
+print(report)
+# Analyzes all masters, marks glyphs with worst verdict
+```
+
+### Check specific master
+
+```python
+masters = get_masters()
+bold_id = masters["masters"][1]["id"]
+
+report = check_punctuation(master_id=bold_id)
+```
+
+### Check across all masters
+
+```python
+masters = get_masters()
+for master in masters["masters"]:
+    print(f"\n=== {master['name']} ===")
+    report = check_punctuation(master_id=master["id"])
+    print(report)
+```
+
+## Sample Output
+
+```markdown
+## Punctuation Consistency
+
+### Regular
+
+**Width mismatches (2):**
+
+| Pair | Width A | Width B | Diff % | Verdict |
+|------|---------|---------|--------|---------|  
+| parenleft/parenright | 320 | 328 | 2.5% | mirrored mismatch |
+| period/comma | 240 | 260 | 8.3% | width warning |
+
+**Ratio issues (1):**
+
+| Pair | Ratio | Expected | Verdict |
+|------|-------|----------|---------|  
+| endash/hyphen | 1.5 | 1.8-2.2 | ratio warning |
+```
+
+## How It Works
+
+1. **Gets glyph widths**: Measures advance width for each punctuation mark
+2. **Checks mirrored pairs**: Compares widths of left/right forms (allows less than 1% tolerance)
+3. **Checks related pairs**: Compares widths of similar marks (allows small difference)
+4. **Checks ratios**: Validates width relationships (endash/hyphen, etc.)
+5. **Marks glyphs**: Red for mirrored mismatches, yellow for warnings
+
+## Tolerance Levels
+
+- **Mirrored pairs**: Less than 1% difference allowed (essentially identical)
+- **Related pairs**: Less than 5% difference allowed
+- **Ratios**: Range-based (e.g., endash/hyphen: 1.8-2.2)
+
+## Use Cases
+
+- **Mirrored form validation**: Ensure parentheses, brackets, braces match
+- **Dash consistency**: Verify hyphen/endash/emdash proportions
+- **Quote mark validation**: Check quote widths are consistent
+- **Multi-master validation**: Ensure punctuation relationships hold across masters
+
+<Info>
+  Mirrored punctuation pairs should have identical widths. A mismatch here is almost always an error (e.g., accidentally editing only one side).
+</Info>
+
+## Skipped Pairs
+
+The tool skips any pairs where one or both glyphs are missing from the font. No error is reported for missing glyphs — only for width mismatches of present glyphs.
+
+## Common Issues
+
+### Mirrored pair mismatch
+
+**Problem**: parenleft=320u, parenright=328u
+
+**Cause**: Accidentally edited one side without mirroring the change
+
+**Fix**: Copy the glyph, flip horizontally, or manually adjust width
+
+### Endash too narrow
+
+**Problem**: endash/hyphen ratio = 1.3 (expected ~2.0)
+
+**Cause**: Endash not wide enough
+
+**Fix**: Widen endash to ~2× hyphen width (traditionally width of lowercase 'n')
+
+### Emdash too short
+
+**Problem**: emdash/endash ratio = 1.5 (expected ~2.0)
+
+**Cause**: Emdash not wide enough
+
+**Fix**: Widen emdash to ~2× endash width (traditionally 1 em = 1000u or UPM)
+
+## Related Tools
+
+- [get_glyph](/api/read/get-glyph) - Get glyph width and metrics
+- [set_glyph_width](/api/write/set-glyph-width) - Adjust glyph width
+- [duplicate_glyph](/api/write/duplicate-glyph) - Duplicate and mirror glyphs
+- [check_related_forms](/api/analysis/check-related-forms) - Check figure/letter relationships

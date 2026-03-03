@@ -1,0 +1,135 @@
+---
+title: set_kerning_pair
+description: Set a kerning pair value between two glyphs
+---
+
+## Description
+
+Set a kerning pair value between two glyphs or groups. Controls the spacing adjustment between specific letter pairs.
+
+## Parameters
+
+<ParamField path="left" type="string" required>
+  Left glyph name or kerning group (e.g., "A" or "@MMK_L_A")
+</ParamField>
+
+<ParamField path="right" type="string" required>
+  Right glyph name or kerning group (e.g., "V" or "@MMK_R_V")
+</ParamField>
+
+<ParamField path="value" type="float" required>
+  Kerning value in font units. Negative = tighter spacing, positive = looser spacing.
+</ParamField>
+
+<ParamField path="master_id" type="string" default="">
+  Master ID to modify. If empty, uses the first master.
+</ParamField>
+
+## Returns
+
+Returns a dict with:
+- `ok` (bool): Whether the operation succeeded
+- `left` (string): The left glyph/group
+- `right` (string): The right glyph/group
+- `value` (float): The kerning value that was set
+- `masterId` (string): The master that was modified
+- `error` (string): Error message if operation failed
+
+## Kerning Values
+
+- **Negative values** reduce spacing (bring glyphs closer)
+- **Positive values** increase spacing (push glyphs apart)
+- **Zero** removes the kerning pair
+- Typical range: -200 to +100 units
+
+## Examples
+
+### Set basic kerning pair
+
+```python
+# Reduce space between A and V
+result = set_kerning_pair(
+    left="A",
+    right="V",
+    value=-80  # Tighten by 80 units
+)
+```
+
+### Remove kerning
+
+```python
+# Set to zero to remove kerning
+result = set_kerning_pair(
+    left="A",
+    right="V",
+    value=0
+)
+```
+
+### Set kerning for specific master
+
+```python
+# Different kerning values for different weights
+set_kerning_pair("A", "V", -60, "master-01-regular")
+set_kerning_pair("A", "V", -100, "master-02-bold")
+```
+
+### Use kerning groups
+
+```python
+# Kern a group (applies to all glyphs in the group)
+set_kerning_pair(
+    left="@MMK_L_A",  # Left group for A-like glyphs
+    right="@MMK_R_V",  # Right group for V-like glyphs
+    value=-80
+)
+```
+
+### Batch set common pairs
+
+```python
+# Common kerning pairs
+pairs = [
+    ("A", "V", -80),
+    ("A", "W", -70),
+    ("T", "a", -60),
+    ("T", "o", -60),
+    ("V", "a", -80),
+    ("W", "a", -60)
+]
+
+for left, right, value in pairs:
+    set_kerning_pair(left, right, value)
+```
+
+## Kerning Groups
+
+Kerning groups allow you to kern multiple glyphs at once:
+
+- **Left groups**: `@MMK_L_groupname`
+- **Right groups**: `@MMK_R_groupname`
+
+Common groups:
+- `@MMK_L_A` - A, Aacute, Agrave, etc.
+- `@MMK_R_V` - V, W, Y
+- `@MMK_L_T` - T, Tcaron
+- `@MMK_R_o` - o, oacute, ograve, etc.
+
+### Example with groups
+
+```python
+# This pairs will apply to all glyphs in both groups
+set_kerning_pair("@MMK_L_T", "@MMK_R_o", -60)
+
+# Exception for specific glyph (overrides group)
+set_kerning_pair("T", "oslash", -40)
+```
+
+## Notes
+
+- Kerning is per-master (different values for Regular, Bold, etc.)
+- Use `get_kerning()` to see existing kerning pairs
+- Group kerning is more efficient than individual pairs
+- Glyph-specific pairs override group pairs
+- Changes are undoable in GlyphsApp with Cmd+Z
+- Setting value to 0 effectively removes the pair

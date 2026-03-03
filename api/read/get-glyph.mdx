@@ -1,0 +1,178 @@
+---
+title: get_glyph
+description: Get complete data for a specific glyph including all paths and metrics
+---
+
+## Description
+
+Get complete data for a specific glyph including all paths and metrics.
+
+Returns all layers with: paths (nodes with x,y coordinates, type, smooth), components, anchors, width, sidebearings.
+
+Node types: "line" (straight on-curve), "curve" (smooth on-curve), "offcurve" (cubic bezier control point).
+
+Path direction: -1 = counter-clockwise (outer contours), 1 = clockwise (inner contours/counters).
+
+## Parameters
+
+<ParamField path="glyph_name" type="string" required>
+  Name of the glyph to retrieve (e.g., "A", "a", "uni0041", "a.ss01")
+</ParamField>
+
+## Returns
+
+<ResponseField name="name" type="string">
+  Glyph name
+</ResponseField>
+
+<ResponseField name="unicode" type="string">
+  Unicode value in hex format
+</ResponseField>
+
+<ResponseField name="layers" type="array">
+  Array of layer objects, one per master
+  
+  <Expandable title="Layer object">
+    <ResponseField name="masterId" type="string">
+      ID of the master this layer belongs to
+    </ResponseField>
+    
+    <ResponseField name="masterName" type="string">
+      Name of the master (e.g., "Light", "Bold")
+    </ResponseField>
+    
+    <ResponseField name="width" type="number">
+      Advance width in font units
+    </ResponseField>
+    
+    <ResponseField name="leftSidebearing" type="number">
+      Left sidebearing (LSB)
+    </ResponseField>
+    
+    <ResponseField name="rightSidebearing" type="number">
+      Right sidebearing (RSB)
+    </ResponseField>
+    
+    <ResponseField name="paths" type="array">
+      Array of path objects containing nodes
+      
+      <Expandable title="Path object">
+        <ResponseField name="closed" type="boolean">
+          Whether the path is closed
+        </ResponseField>
+        
+        <ResponseField name="direction" type="number">
+          Path direction: -1 (counter-clockwise/outer) or 1 (clockwise/inner)
+        </ResponseField>
+        
+        <ResponseField name="nodes" type="array">
+          Array of node objects
+          
+          <Expandable title="Node object">
+            <ResponseField name="x" type="number">
+              X coordinate
+            </ResponseField>
+            
+            <ResponseField name="y" type="number">
+              Y coordinate
+            </ResponseField>
+            
+            <ResponseField name="type" type="string">
+              Node type: "line", "curve", or "offcurve"
+            </ResponseField>
+            
+            <ResponseField name="smooth" type="boolean">
+              Whether the node has smooth connections
+            </ResponseField>
+          </Expandable>
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="components" type="array">
+      Array of component references
+    </ResponseField>
+    
+    <ResponseField name="anchors" type="array">
+      Array of anchor points for mark positioning
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Usage
+
+```python
+import anthropic
+
+client = anthropic.Client()
+
+response = client.messages.create(
+    model="claude-3-5-sonnet-20241022",
+    max_tokens=4096,
+    tools=[
+        {
+            "type": "mcp",
+            "server_name": "glyphs-mcp",
+            "tool_name": "get_glyph",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "glyph_name": {"type": "string"}
+                },
+                "required": ["glyph_name"]
+            }
+        }
+    ],
+    messages=[{"role": "user", "content": "Show me the paths for letter A"}],
+)
+```
+
+```bash
+# Using Claude Code CLI
+get_glyph("A")
+get_glyph("a.ss01")
+```
+
+## Example Response
+
+```json
+{
+  "name": "A",
+  "unicode": "0041",
+  "layers": [
+    {
+      "masterId": "master01",
+      "masterName": "Light",
+      "width": 600,
+      "leftSidebearing": 20,
+      "rightSidebearing": 20,
+      "paths": [
+        {
+          "closed": true,
+          "direction": -1,
+          "nodes": [
+            {"x": 100, "y": 0, "type": "line", "smooth": false},
+            {"x": 300, "y": 700, "type": "line", "smooth": false},
+            {"x": 500, "y": 0, "type": "line", "smooth": false}
+          ]
+        }
+      ],
+      "components": [],
+      "anchors": [
+        {"name": "top", "x": 300, "y": 700}
+      ]
+    }
+  ]
+}
+```
+
+## Notes
+
+- Returns complete path data for all masters
+- Node types determine how curves are drawn:
+  - `line`: On-curve point with straight segment to previous point
+  - `curve`: On-curve point with cubic bezier curve to previous point
+  - `offcurve`: Bezier control handle (always comes in pairs before a `curve` node)
+- Curve segments consist of: offcurve, offcurve, curve (3 nodes per segment)
+- Path direction matters for rendering: outer contours should be counter-clockwise (-1), holes/counters clockwise (1)
+- Use this data for analysis or to prepare modifications with `set_glyph_paths()`

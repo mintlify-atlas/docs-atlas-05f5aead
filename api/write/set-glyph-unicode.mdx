@@ -1,0 +1,108 @@
+---
+title: set_glyph_unicode
+description: Set the unicode value of a glyph
+---
+
+## Description
+
+Set the unicode value of a glyph. Unicode values determine which character a glyph represents in text.
+
+## Parameters
+
+<ParamField path="glyph_name" type="string" required>
+  Name of the glyph to update
+</ParamField>
+
+<ParamField path="unicode_value" type="string" required>
+  Hex unicode string (e.g., "0061" for 'a'). Pass empty string "" to clear unicode.
+</ParamField>
+
+## Returns
+
+Returns a dict with:
+- `ok` (bool): Whether the operation succeeded
+- `glyph` (string): The modified glyph name
+- `unicode` (string): The unicode value that was set (or null if cleared)
+- `error` (string): Error message if operation failed
+
+## Examples
+
+### Set unicode for a letter
+
+```python
+# Set lowercase 'a' (U+0061)
+result = set_glyph_unicode(
+    glyph_name="a",
+    unicode_value="0061"
+)
+```
+
+### Set unicode for uppercase
+
+```python
+# Set uppercase 'A' (U+0041)
+result = set_glyph_unicode(
+    glyph_name="A",
+    unicode_value="0041"
+)
+```
+
+### Set unicode for accented character
+
+```python
+# Set Aacute (U+00C1)
+result = set_glyph_unicode(
+    glyph_name="Aacute",
+    unicode_value="00C1"
+)
+```
+
+### Clear unicode from alternate glyph
+
+```python
+# Alternates typically don't have unicode
+result = set_glyph_unicode(
+    glyph_name="a.ss01",
+    unicode_value=""  # Clear unicode
+)
+```
+
+### Set unicode for special characters
+
+```python
+# Euro sign (U+20AC)
+set_glyph_unicode("Euro", "20AC")
+
+# Em dash (U+2014)
+set_glyph_unicode("emdash", "2014")
+
+# Copyright symbol (U+00A9)
+set_glyph_unicode("copyright", "00A9")
+```
+
+## Unicode Format
+
+- Use **hex strings** without prefix: `"0061"` not `"U+0061"` or `"\u0061"`
+- Use **4-6 hex digits**: `"0041"` for basic plane, `"1F600"` for emoji
+- **Leading zeros** are required for 4-digit values: `"0041"` not `"41"`
+- **Case insensitive**: `"00C1"` and `"00c1"` both work
+
+## Common Unicode Ranges
+
+| Range | Description |
+|-------|-------------|
+| 0020-007F | Basic Latin (ASCII) |
+| 0080-00FF | Latin-1 Supplement |
+| 0100-017F | Latin Extended-A |
+| 0180-024F | Latin Extended-B |
+| 0400-04FF | Cyrillic |
+| 2000-206F | General Punctuation |
+| 20A0-20CF | Currency Symbols |
+
+## Notes
+
+- Multiple glyphs can share the same unicode (e.g., default 'a' and 'a.ss01')
+- Only one glyph per unicode will be used in text by default
+- Alternates (`.ss01`, `.salt`, etc.) typically don't have unicode values
+- Changes are undoable in GlyphsApp with Cmd+Z
+- Use empty string `""` to clear unicode, not `None`

@@ -1,0 +1,255 @@
+---
+title: analyze_spacing
+description: Analyze spacing quality across all masters
+---
+
+## Overview
+
+Comprehensive spacing analysis that measures sidebearings using scanline ray-casting and checks for consistency issues. Validates spacing using Tracy/Smith rules, group consistency, counter-based validation, reference ratios, and cross-master drift detection.
+
+## Syntax
+
+```python
+analyze_spacing(
+    master_id: str = "",
+    glyph_names: list[str] = None
+) -> str
+```
+
+## Parameters
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. If empty, analyzes ALL masters.
+</ParamField>
+
+<ParamField path="glyph_names" type="list[str]" default="None">
+  Optional list of glyphs to analyze. If empty, analyzes all Letter glyphs (uppercase, lowercase).
+</ParamField>
+
+## Return Value
+
+Returns a formatted markdown report with:
+
+- Reference ratios (n LSB / o LSB — optimal ~1.5x)
+- Counter-based validation (LSB as % of counter width)
+- Word space check (space width ≈ ¼ em ≈ width of i)
+- Sidebearing group inconsistencies (n-group: h,i,k,l,m,n,p,r should match)
+- Tracy/Smith per-glyph sidebearing rules
+- Side-type ordering (straight SB > round SB > diagonal SB)
+- Symmetric glyph check (o, O, H, I should have LSB ≈ RSB)
+- Cross-master spacing drift
+
+## Checks Performed
+
+### 1. Reference ratios
+
+**n LSB / o LSB**: Optimal ~1.5x, acceptable 1.2–2.0
+
+**Reason**: Straight stems need more sidebearing than round forms for optical evenness
+
+### 2. Counter-based validation
+
+**n LSB as % of n counter**: Expected 25–50%
+
+**Reason**: Sidebearing should be proportional to internal counter width
+
+### 3. Word space
+
+**space width**: Expected ≈ ¼ em ≈ width of i
+
+**Reason**: Standard typographic convention for readable word spacing
+
+### 4. Sidebearing group consistency
+
+Glyphs in the same kerning group should have similar sidebearings:
+
+- **n-group** (straight stems): h, i, k, l, m, n, p, r
+- **o-group** (round forms): c, d, e, g, o, q
+- **Others**: Group by shape similarity
+
+### 5. Tracy/Smith rules
+
+Per-glyph sidebearing relationships from Karen Cheng's "Designing Type":
+
+**Examples**:
+- **o LSB = o RSB** (symmetric)
+- **c LSB ≈ o LSB**
+- **e LSB ≈ o LSB**
+- **n LSB > o LSB**
+- **H LSB = H RSB** (symmetric)
+
+### 6. Side-type ordering
+
+**Expected**: straight SB > round SB > diagonal SB
+
+**Reason**: Optical compensation — round and diagonal forms need less sidebearing
+
+### 7. Symmetric glyphs
+
+These glyphs should have LSB ≈ RSB:
+
+- **Round**: o, O
+- **Straight symmetric**: H, I, A, V, W, X, Y, M
+
+### 8. Cross-master drift
+
+**Problem**: Spacing ratio relative to reference changed significantly between masters
+
+**Impact**: Spacing relationships don't hold across interpolation
+
+## Color Marking System
+
+<Info>
+  Results are automatically marked in GlyphsApp:
+  - **Red (0)** = significant inconsistency
+  - **Yellow (3)** = minor deviation
+  - **Green (4)** = pass
+  
+  If analyzing all masters, glyph color = worst verdict across all masters.
+</Info>
+
+## Examples
+
+### Analyze all glyphs, all masters
+
+```python
+report = analyze_spacing()
+print(report)
+# Analyzes all Letter glyphs across all masters
+```
+
+### Analyze specific glyphs
+
+```python
+report = analyze_spacing(glyph_names=["n", "o", "h", "c", "e"])
+```
+
+### Analyze specific master
+
+```python
+masters = get_masters()
+bold_id = masters["masters"][1]["id"]
+
+report = analyze_spacing(master_id=bold_id, glyph_names=["n","o","H","O"])
+```
+
+### Analyze lowercase only
+
+```python
+lowercase = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"]
+report = analyze_spacing(glyph_names=lowercase)
+```
+
+## Sample Output
+
+```markdown
+## Spacing Analysis (2 masters: Regular, Bold)
+
+### Reference ratios
+
+| Master | Ratio | Value | Expected | Verdict |
+|--------|-------|-------|----------|---------|  
+| Regular | n LSB / o LSB (75/50) | 1.5 | 1.2-2.0 | pass |
+| Bold | n LSB / o LSB (85/65) | 1.31 | 1.2-2.0 | pass |
+
+### Counter-based validation
+LSB as percentage of counter width (expected 25–50%).
+
+| Glyph | Counter | LSB | Ratio | Expected | Verdict | Master |
+|-------|---------|-----|-------|----------|---------|--------|
+| n | 300 | 75 | 25% | 25-50% | pass | Regular |
+| o | 320 | 50 | 16% | 25-50% | too tight | Regular |
+
+### Word space
+
+| Master | Width | % of em | ¼ em | i width | Verdict |
+|--------|-------|---------|------|---------|---------|  
+| Regular | 250 | 25% | 250 | 240 | pass |
+| Bold | 280 | 28% | 250 | 260 | slightly wide |
+
+### Sidebearing group inconsistencies (4)
+
+| Glyph | Side | Value | Group avg (ref) | Deviation | Master |
+|-------|------|-------|-----------------|-----------|--------|
+| h | LSB | 80 | 75 (=n) | +5 | Regular |
+| i | LSB | 70 | 75 (=n) | -5 | Regular |
+| c | LSB | 45 | 50 (=o) | -5 | Regular |
+
+### Tracy/Smith sidebearing rules (3)
+Per-glyph expected relationships based on Cheng 'Designing Type'.
+
+| Glyph | Side | Value | Expected | Source | Severity | Master |
+|-------|------|-------|----------|--------|----------|--------|
+| e | LSB | 45 | 50 (≈o LSB) | Tracy | medium | Regular |
+| c | RSB | 55 | 50 (≈o RSB) | Tracy | medium | Regular |
+
+### Side-type ordering violations (1)
+Expected: straight SB > round SB > diagonal SB.
+
+- **lowercase LSB**: round avg (52) should be less than straight avg (50) [Regular]
+
+### Asymmetric glyphs (2)
+Glyphs that should have LSB ≈ RSB.
+
+| Glyph | LSB | RSB | Difference | Master |
+|-------|-----|-----|------------|--------|
+| o | 50 | 55 | 5 | Regular |
+| O | 60 | 68 | 8 | Regular |
+
+### Cross-master drift (3)
+Spacing ratio relative to reference changed significantly between masters.
+
+| Glyph | Side | Master A (ratio) | Master B (ratio) |
+|-------|------|------------------|------------------|
+| h | LSB | Regular: 75 (1.5) | Bold: 95 (1.46) |
+| c | LSB | Regular: 50 (1.0) | Bold: 70 (1.08) |
+
+**2 group inconsistencies** | **3 rule deviations** | **1 ordering violations** | **2 asymmetric glyphs** | **3 cross-master drift**
+```
+
+## Use Cases
+
+- **Spacing quality control**: Comprehensive check of sidebearing consistency
+- **After spacing edits**: Validate that changes maintained relationships
+- **Multi-master validation**: Ensure spacing ratios hold across interpolation
+- **Tracy/Smith validation**: Check adherence to professional spacing rules
+- **Before kerning**: Fix sidebearing issues before adding kerning pairs
+
+<Note>
+  Fix sidebearing issues BEFORE kerning. Excessive kerning exceptions often indicate underlying sidebearing problems that should be solved with better spacing.
+</Note>
+
+## Spacing Philosophy
+
+### Tracy method (Walter Tracy)
+
+**Principle**: Space glyphs based on shape similarity and visual weight
+
+- Straight stems (n, h, m) get more sidebearing
+- Round forms (o, c, e) get less sidebearing
+- Group consistency is critical (all n-shaped glyphs match)
+
+### Smith method (Fred Smeijers)
+
+**Principle**: Counter-proportional spacing — sidebearing relates to counter width
+
+- LSB should be 25-50% of internal counter width
+- Wider counters → wider sidebearings
+- Maintains visual rhythm
+
+## Measuring Sidebearings
+
+The tool uses **scanline ray-casting**:
+
+1. Casts horizontal rays at multiple heights through the glyph
+2. Finds the leftmost/rightmost ink pixels
+3. Measures distance from glyph origin (LSB) and advance width (RSB)
+4. Averages measurements across all rays
+5. Produces optical sidebearing (accounts for shape, not just bounding box)
+
+## Related Tools
+
+- [analyze_kerning](/api/analysis/analyze-kerning) - Analyze kerning quality
+- [get_spacing_strings](/api/analysis/get-spacing-strings) - Get visual spacing test strings
+- [set_glyph_width](/api/write/set-glyph-width) - Adjust glyph width
+- [compare_color](/api/analysis/compare-color) - Check typographic color consistency

@@ -1,0 +1,165 @@
+---
+title: check_overshoots
+description: Check overshoot values for round and pointed forms
+---
+
+## Overview
+
+Checks overshoot values for round and pointed forms. Round forms (O, o, C, S) should overshoot baseline and zone top by ~1-2% of zone height. Pointed forms (A, V, W) need MORE overshoot than rounds to appear optically aligned.
+
+## Syntax
+
+```python
+check_overshoots(
+    glyph_names: list[str] = None,
+    master_id: str = ""
+) -> str
+```
+
+## Parameters
+
+<ParamField path="glyph_names" type="list[str]" default="None">
+  Optional list of glyphs to check. If not provided, checks all known overshoot-sensitive glyphs in the font:
+  - **Uppercase**: O, C, D, G, Q, S, U, A, V, W, M, N
+  - **Lowercase**: o, c, e, s, b, d, p, q, g, a, u, v, w, y
+  - **Figures**: 0, 3, 5, 6, 8, 9
+</ParamField>
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. If empty, analyzes ALL masters.
+</ParamField>
+
+## Return Value
+
+Returns a formatted markdown report with:
+
+- Per-master analysis
+- Table of non-passing glyphs with overshoot values and percentages
+- Statistics (average round overshoot values)
+- Verdict for each glyph
+
+## Verdict System
+
+<AccordionGroup>
+  <Accordion title="pass" icon="circle-check" iconType="solid">
+    Overshoot within expected range. Marked **green (4)** in GlyphsApp.
+  </Accordion>
+  
+  <Accordion title="missing overshoot" icon="circle-xmark" iconType="solid">
+    Round/pointed form doesn't overshoot or undershoots. Marked **red (0)** in GlyphsApp.
+  </Accordion>
+  
+  <Accordion title="excessive overshoot" icon="circle-xmark" iconType="solid">
+    Overshoot is too large (>4% of zone height). Marked **red (0)** in GlyphsApp.
+  </Accordion>
+</AccordionGroup>
+
+## Color Marking System
+
+<Info>
+  Results are automatically marked in GlyphsApp:
+  - **Red (0)** = missing or excessive overshoot
+  - **Green (4)** = pass
+  
+  If analyzing all masters, glyph color = worst verdict across all masters.
+</Info>
+
+## Expected Overshoot Values
+
+### Round forms (O, o, C, e, etc.)
+- **Top overshoot**: 1-2.5% of zone height
+- **Bottom overshoot**: 1-2.5% of zone height
+- **Example**: For 700u cap height, expect ~7-17u overshoot
+
+### Pointed forms (A, V, W, v, w)
+- **More overshoot than rounds**: Typically 1.5-3% of zone height
+- **Reason**: Optical illusion — points appear to recede without extra overshoot
+
+<Note>
+  Pointed forms need MORE overshoot than round forms to appear optically aligned at the baseline and cap height.
+</Note>
+
+## Examples
+
+### Check all overshoot-sensitive glyphs
+
+```python
+report = check_overshoots()
+print(report)
+# Checks all uppercase, lowercase, and figure round/pointed forms
+```
+
+### Check specific glyphs
+
+```python
+report = check_overshoots(glyph_names=["O", "o", "C", "c", "e", "A", "V"])
+```
+
+### Check specific master
+
+```python
+masters = get_masters()
+bold_id = masters["masters"][1]["id"]
+
+report = check_overshoots(master_id=bold_id)
+```
+
+### Check uppercase only
+
+```python
+uppercase_rounds = ["O", "C", "D", "G", "Q", "S", "U", "A", "V", "W", "M", "N"]
+report = check_overshoots(glyph_names=uppercase_rounds)
+```
+
+## Sample Output
+
+```markdown
+## Overshoot Check
+
+### Regular
+
+| Glyph | Type | Top OS | Bottom OS | Top % | Bottom % | Verdict |
+|-------|------|--------|-----------|-------|----------|---------|  
+| O | round | 12 | 12 | 1.7% | 1.7% | pass |
+| A | pointed | 18 | 18 | 2.6% | 2.6% | pass |
+| C | round | 5 | 8 | 0.7% | 1.1% | missing overshoot |
+| e | round | 14 | 0 | 2.7% | 0.0% | missing overshoot |
+
+Avg round overshoot: top=12u, bottom=11u
+```
+
+## How It Works
+
+1. **Measures bounds**: Gets the exact top and bottom y-coordinates of the glyph outline
+2. **Compares to zones**:
+   - **Lowercase**: Baseline (0) and x-height
+   - **Uppercase**: Baseline (0) and cap-height
+   - **Figures**: Baseline (0) and cap-height
+3. **Calculates overshoot**: Distance beyond the zone boundary
+4. **Converts to percentage**: Overshoot / zone height × 100
+5. **Evaluates verdict**: Checks if within expected range for glyph type
+
+## Use Cases
+
+- **Optical alignment check**: Verify round/pointed forms overshoot correctly
+- **After vertical scaling**: Check overshoots after using rmx_scale with height parameter
+- **Multi-master validation**: Ensure overshoots are consistent across masters
+- **Design review**: Find glyphs that appear misaligned at baseline/cap height
+
+<Info>
+  Overshoots are a critical part of optical correction. Without proper overshoots, round and pointed forms appear to "float" above the baseline or sink below the cap height.
+</Info>
+
+## Overshoot Types
+
+| Type | Glyphs | Expected Top | Expected Bottom |
+|------|--------|--------------|----------------|
+| **Round** | O, C, D, G, Q, S, o, c, e, s, b, d, p, q, 0, 3, 6, 8, 9 | 1-2.5% | 1-2.5% |
+| **Pointed** | A, V, W, M, N, v, w, y | 1.5-3% | 1.5-3% |
+| **Mixed** | g, a, u | Variable | 1-2.5% |
+
+## Related Tools
+
+- [get_font_info](/api/read/get-font-info) - Get ascender, descender, x-height, cap-height
+- [rmx_scale](/api/rmx/scale) - Scale glyph height (may affect overshoots)
+- [compare_proportions](/api/analysis/compare-proportions) - Check width proportions

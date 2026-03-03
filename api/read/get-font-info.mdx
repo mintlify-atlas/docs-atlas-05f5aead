@@ -1,0 +1,114 @@
+---
+title: get_font_info
+description: Get information about the currently open font in GlyphsApp
+---
+
+## Description
+
+Get information about the currently open font in GlyphsApp.
+
+Returns font family name, units per em, glyph count, masters, axes, metrics (ascender, descender, x-height, cap height), and instances.
+
+## Parameters
+
+This tool takes no parameters.
+
+## Returns
+
+<ResponseField name="familyName" type="string">
+  The font family name
+</ResponseField>
+
+<ResponseField name="unitsPerEm" type="number">
+  Units per em (typically 1000 or 2048)
+</ResponseField>
+
+<ResponseField name="glyphCount" type="number">
+  Total number of glyphs in the font
+</ResponseField>
+
+<ResponseField name="masters" type="array">
+  Array of master definitions with metrics and axis positions
+</ResponseField>
+
+<ResponseField name="axes" type="array">
+  Variable font axes (Weight, Width, etc.)
+</ResponseField>
+
+<ResponseField name="metrics" type="object">
+  Font metrics including ascender, descender, x-height, and cap height
+</ResponseField>
+
+<ResponseField name="instances" type="array">
+  Font instances (Regular, Bold, etc.) with their axis values
+</ResponseField>
+
+## Usage
+
+```python
+import anthropic
+
+client = anthropic.Client()
+
+response = client.messages.create(
+    model="claude-3-5-sonnet-20241022",
+    max_tokens=1024,
+    tools=[
+        {
+            "type": "mcp",
+            "server_name": "glyphs-mcp",
+            "tool_name": "get_font_info",
+        }
+    ],
+    messages=[{"role": "user", "content": "What font is currently open?"}],
+)
+```
+
+```bash
+# Using Claude Code CLI
+get_font_info()
+```
+
+## Example Response
+
+```json
+{
+  "familyName": "My Font Family",
+  "unitsPerEm": 1000,
+  "glyphCount": 487,
+  "masters": [
+    {
+      "id": "master01",
+      "name": "Light",
+      "ascender": 800,
+      "descender": -200,
+      "xHeight": 500,
+      "capHeight": 700
+    },
+    {
+      "id": "master02",
+      "name": "Bold",
+      "ascender": 800,
+      "descender": -200,
+      "xHeight": 500,
+      "capHeight": 700
+    }
+  ],
+  "axes": [
+    {
+      "name": "Weight",
+      "tag": "wght"
+    }
+  ],
+  "instances": [
+    {"name": "Regular", "weight": 400},
+    {"name": "Bold", "weight": 700}
+  ]
+}
+```
+
+## Notes
+
+- This tool requires an active GlyphsApp session with a font open
+- Returns comprehensive metadata useful for understanding the font's structure
+- Use this before other operations to verify the correct font is loaded

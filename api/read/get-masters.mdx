@@ -1,0 +1,115 @@
+---
+title: get_masters
+description: Get all font masters with their metrics and axis positions
+---
+
+## Description
+
+Get all font masters with their metrics and axis positions.
+
+Returns master ID, name, ascender, descender, x-height, cap-height, and axis values for each master.
+
+## Parameters
+
+This tool takes no parameters.
+
+## Returns
+
+<ResponseField name="masters" type="array">
+  Array of master objects
+  
+  <Expandable title="Master object">
+    <ResponseField name="id" type="string">
+      Unique master ID
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Master name (e.g., "Light", "Bold", "Regular")
+    </ResponseField>
+    
+    <ResponseField name="ascender" type="number">
+      Ascender height in font units
+    </ResponseField>
+    
+    <ResponseField name="descender" type="number">
+      Descender depth in font units (typically negative)
+    </ResponseField>
+    
+    <ResponseField name="xHeight" type="number">
+      x-height in font units
+    </ResponseField>
+    
+    <ResponseField name="capHeight" type="number">
+      Cap height in font units
+    </ResponseField>
+    
+    <ResponseField name="axisValues" type="object">
+      Axis positions for this master (e.g., Weight: 400, Width: 100)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Usage
+
+```python
+import anthropic
+
+client = anthropic.Client()
+
+response = client.messages.create(
+    model="claude-3-5-sonnet-20241022",
+    max_tokens=1024,
+    tools=[
+        {
+            "type": "mcp",
+            "server_name": "glyphs-mcp",
+            "tool_name": "get_masters",
+        }
+    ],
+    messages=[{"role": "user", "content": "What masters does this font have?"}],
+)
+```
+
+```bash
+# Using Claude Code CLI
+get_masters()
+```
+
+## Example Response
+
+```json
+{
+  "masters": [
+    {
+      "id": "master01",
+      "name": "Light",
+      "ascender": 800,
+      "descender": -200,
+      "xHeight": 500,
+      "capHeight": 700,
+      "axisValues": {
+        "Weight": 300
+      }
+    },
+    {
+      "id": "master02",
+      "name": "Bold",
+      "ascender": 800,
+      "descender": -200,
+      "xHeight": 500,
+      "capHeight": 700,
+      "axisValues": {
+        "Weight": 700
+      }
+    }
+  ]
+}
+```
+
+## Notes
+
+- Essential for understanding the font's interpolation space
+- Use master IDs when calling other tools that accept a `master_id` parameter
+- All metrics are in the font's UPM (units per em) coordinate system
+- For variable fonts, `axisValues` shows where each master sits in the design space
+- Single-master fonts will return an array with one master

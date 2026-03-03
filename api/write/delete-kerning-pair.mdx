@@ -1,0 +1,152 @@
+---
+title: delete_kerning_pair
+description: Delete a kerning pair
+---
+
+## Description
+
+Delete a kerning pair between two glyphs or groups. Removes the spacing adjustment, returning to default spacing.
+
+<Warning>
+  This permanently removes the kerning pair. The operation can be undone in GlyphsApp with Cmd+Z, but not via MCP.
+</Warning>
+
+## Parameters
+
+<ParamField path="left" type="string" required>
+  Left glyph name or kerning group (e.g., "A" or "@MMK_L_A")
+</ParamField>
+
+<ParamField path="right" type="string" required>
+  Right glyph name or kerning group (e.g., "V" or "@MMK_R_V")
+</ParamField>
+
+<ParamField path="master_id" type="string" default="">
+  Master ID to modify. If empty, uses the first master.
+</ParamField>
+
+## Returns
+
+Returns a dict with:
+- `ok` (bool): Whether the operation succeeded
+- `deleted` (object): The deleted pair with `left` and `right` fields
+- `masterId` (string): The master that was modified
+- `error` (string): Error message if operation failed
+
+## Examples
+
+### Delete a kerning pair
+
+```python
+result = delete_kerning_pair(
+    left="A",
+    right="V"
+)
+```
+
+### Delete from specific master
+
+```python
+result = delete_kerning_pair(
+    left="A",
+    right="V",
+    master_id="master-02-bold"
+)
+```
+
+### Delete group kerning pair
+
+```python
+result = delete_kerning_pair(
+    left="@MMK_L_A",
+    right="@MMK_R_V"
+)
+```
+
+### Batch delete pairs
+
+```python
+# Remove all T-vowel kerning
+vowels = ["a", "e", "i", "o", "u"]
+
+for vowel in vowels:
+    result = delete_kerning_pair("T", vowel)
+    if result.get('ok'):
+        print(f"Deleted T-{vowel} kerning")
+```
+
+### Clean up redundant pairs
+
+```python
+# After kerning analysis, remove redundant exceptions
+kerning_data = get_kerning()
+
+# Find pairs that match their group value
+for pair in redundant_exceptions:
+    delete_kerning_pair(pair['left'], pair['right'])
+```
+
+### Delete with error handling
+
+```python
+result = delete_kerning_pair("A", "V")
+
+if result.get('ok'):
+    print(f"Deleted kerning: {result['deleted']['left']}/{result['deleted']['right']}")
+else:
+    print(f"Error: {result.get('error')}")
+```
+
+## Difference from set_kerning_pair(value=0)
+
+There are two ways to remove kerning:
+
+### Option 1: Delete (this tool)
+```python
+delete_kerning_pair("A", "V")
+# Removes the pair completely from kerning data
+```
+
+### Option 2: Set to zero
+```python
+set_kerning_pair("A", "V", 0)
+# Keeps the pair in kerning data with value=0
+```
+
+**Recommendation**: Use `delete_kerning_pair` to clean up kerning data. Use `set_kerning_pair(value=0)` only if you need to explicitly override a group pair.
+
+## Use Cases
+
+### Remove exception pairs
+```python
+# Group pair exists, remove glyph-specific exception
+delete_kerning_pair("T", "oacute")  # Falls back to @MMK_L_T / @MMK_R_o
+```
+
+### Clean up after glyph deletion
+```python
+# After deleting a glyph, remove its kerning
+delete_glyph("A.old")
+
+# Remove any kerning pairs involving A.old
+for pair in font_kerning:
+    if "A.old" in [pair['left'], pair['right']]:
+        delete_kerning_pair(pair['left'], pair['right'])
+```
+
+### Reset kerning across all masters
+```python
+# Delete same pair from all masters
+masters = get_masters()
+
+for master in masters['masters']:
+    delete_kerning_pair("A", "V", master['id'])
+```
+
+## Notes
+
+- Deleting a pair is **per-master** (other masters unaffected)
+- Use `get_kerning()` to see all existing pairs before deleting
+- If a glyph-specific pair is deleted, group kerning (if exists) will apply
+- Changes are undoable in GlyphsApp with Cmd+Z
+- Does not delete the glyphs themselves, only their kerning relationship

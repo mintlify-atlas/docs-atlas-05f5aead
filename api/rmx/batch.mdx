@@ -1,0 +1,161 @@
+---
+title: rmx_batch
+description: Apply an RMX filter to multiple glyphs at once
+---
+
+## Overview
+
+Apply an RMX filter to multiple glyphs at once. This is the most efficient way to process multiple glyphs with the same RMX operation.
+
+## Signature
+
+```python
+rmx_batch(
+    filter_name: str,
+    glyph_names: list[str],
+    params: dict = {},
+    master_id: str = ""
+) -> dict
+```
+
+## Parameters
+
+<ParamField path="filter_name" type="string" required>
+  Name of the RMX filter to apply. One of:
+  - `"harmonize"` - Optimize bezier curves
+  - `"tune"` - Adjust weight/width/height/slant
+  - `"scale"` - Scale by percentage
+  - `"monospace"` - Adjust to fixed width
+</ParamField>
+
+<ParamField path="glyph_names" type="list[string]" required>
+  List of glyph names to process
+  
+  Example: `["a", "b", "c"]` or `["A", "B", "C", ..., "Z"]`
+</ParamField>
+
+<ParamField path="params" type="dict" default="{}">
+  Filter-specific parameters (same as individual tool params)
+  
+  See individual tool docs for available parameters:
+  - [`rmx_harmonize`](/api/rmx/harmonize) - `mode`
+  - [`rmx_scale`](/api/rmx/scale) - `width`, `height`, `weight`, `adjustSpace`, `verticalShift`
+  - [`rmx_tune`](/api/rmx/tune) - `weight`, `width`, `height`, `slant`, `fixedWidth`
+  - [`rmx_monospace`](/api/rmx/monospace) - `monoWidth`, `keepStroke`, `useSpacing`
+</ParamField>
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. If empty, uses the first master
+</ParamField>
+
+## When to Use
+
+Use `rmx_batch` when you need to:
+- Apply the same operation to multiple glyphs
+- Process entire character sets (lowercase, uppercase, numerals, etc.)
+- Efficiently batch-process glyphs instead of calling individual tools
+
+## Usage Examples
+
+### Harmonize all lowercase letters
+
+```python
+# Harmonize all lowercase
+rmx_batch(
+    "harmonize",
+    ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+     "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"],
+    params={"mode": "harmonize"}
+)
+```
+
+### Make all caps 20% wider
+
+```python
+# Make all uppercase 20% wider
+rmx_batch(
+    "scale",
+    ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+     "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"],
+    params={"width": 120}
+)
+```
+
+### Make all uppercase monospaced
+
+```python
+# Make all uppercase letters 600 units wide
+rmx_batch(
+    "monospace",
+    ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+     "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"],
+    params={"monoWidth": 600}
+)
+```
+
+### Make multiple glyphs bolder
+
+```python
+# Make bold adjustments to specific glyphs
+rmx_batch(
+    "tune",
+    ["n", "m", "h"],
+    params={"weight": 30}
+)
+```
+
+### Harmonize with custom mode
+
+```python
+# Apply dekink mode to multiple glyphs
+rmx_batch(
+    "harmonize",
+    ["o", "n", "b", "d", "p", "q"],
+    params={"mode": "dekink"}
+)
+```
+
+### Scale multiple glyphs with spacing adjustment
+
+```python
+# Scale width and adjust spacing
+rmx_batch(
+    "scale",
+    ["i", "j", "l"],
+    params={
+        "width": 110,
+        "adjustSpace": 15
+    }
+)
+```
+
+## Parameter Mapping
+
+When using `params`, use the **camelCase** parameter names from the API:
+
+| Python parameter | Batch params key |
+|-----------------|------------------|
+| `adjust_space` | `adjustSpace` |
+| `vertical_shift` | `verticalShift` |
+| `mono_width` | `monoWidth` |
+| `keep_stroke` | `keepStroke` |
+| `use_spacing` | `useSpacing` |
+| `fixed_width` | `fixedWidth` |
+
+<Note>
+  Single-word parameters like `mode`, `width`, `height`, `weight`, `slant` remain lowercase.
+</Note>
+
+## Response
+
+Returns a dictionary with:
+- Batch operation results
+- Success/failure status for each glyph
+- Any messages from the RMX filter
+
+## Performance
+
+Batch processing is more efficient than calling individual tools in a loop, as it:
+- Reduces API overhead
+- Processes glyphs in a single operation
+- Provides consolidated results

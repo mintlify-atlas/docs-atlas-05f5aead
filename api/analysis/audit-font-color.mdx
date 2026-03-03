@@ -1,0 +1,176 @@
+---
+title: audit_font_color
+description: Full font color audit — analyzes ALL letter glyphs grouped by category
+---
+
+## Overview
+
+Comprehensive typographic color audit that analyzes ALL letter glyphs in the font, grouped into uppercase, lowercase, and figures. Evaluates each against expected density ratios from industry patterns. This is the definitive "is my font's color even?" check.
+
+## Syntax
+
+```python
+audit_font_color(master_id: str = "") -> str
+```
+
+## Parameters
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. If empty, analyzes ALL masters with worst-verdict-wins for glyph colors.
+</ParamField>
+
+## Return Value
+
+Returns a formatted markdown report with:
+
+- Per-master analysis for uppercase, lowercase, and figures
+- Reference density values
+- Table of non-passing glyphs with deviations
+- Lowercase-to-uppercase density ratio
+- Summary statistics
+
+## Verdict System
+
+<AccordionGroup>
+  <Accordion title="pass" icon="circle-check" iconType="solid">
+    Density within expected tolerance. Marked **green (4)** in GlyphsApp.
+  </Accordion>
+  
+  <Accordion title="compensation" icon="triangle-exclamation" iconType="solid">
+    Expected optical compensation. Marked **yellow (3)** in GlyphsApp.
+    
+    Only flagged if outside the expected range for this type of compensation.
+  </Accordion>
+  
+  <Accordion title="inconsistent" icon="circle-xmark" iconType="solid">
+    Real density issue. Marked **red (0)** in GlyphsApp.
+  </Accordion>
+  
+  <Accordion title="unreliable" icon="circle-question" iconType="solid">
+    Measurement unreliable. Marked **orange (1)** in GlyphsApp.
+  </Accordion>
+</AccordionGroup>
+
+## Color Marking System
+
+<Info>
+  All glyphs are automatically marked in GlyphsApp:
+  - **Red (0)** = inconsistent density
+  - **Orange (1)** = unreliable measurement
+  - **Yellow (3)** = optical compensation (expected)
+  - **Green (4)** = pass
+  
+  If analyzing all masters, glyph color = worst verdict across all masters.
+</Info>
+
+## Examples
+
+### Full font audit (all masters)
+
+```python
+report = audit_font_color()
+print(report)
+# Analyzes ALL masters, marks glyphs with worst verdict across masters
+```
+
+### Audit specific master
+
+```python
+masters = get_masters()
+bold_id = masters["masters"][1]["id"]
+
+report = audit_font_color(master_id=bold_id)
+# Only analyzes Bold master
+```
+
+### Check Regular and Bold separately
+
+```python
+masters = get_masters()
+
+for master in masters["masters"]:
+    print(f"\n=== {master['name']} ===")
+    report = audit_font_color(master_id=master["id"])
+    print(report)
+```
+
+## Sample Output
+
+```markdown
+## Font Color Audit
+
+### Regular
+Reference: n=0.420 (lowercase), H=0.380 (uppercase)
+
+**Lowercase:**
+| Glyph | Value | Ref | Dev | Verdict |
+|-------|-------|-----|-----|---------|  
+| o | 0.445 | 0.420 | +0.025 | compensation |
+| w | 0.510 | 0.420 | +0.090 | inconsistent |
+| f | 0.360 | 0.420 | -0.060 | inconsistent |
+
+**Uppercase:**
+| Glyph | Value | Ref | Dev | Verdict |
+|-------|-------|-----|-----|---------|  
+| O | 0.400 | 0.380 | +0.020 | compensation |
+| W | 0.460 | 0.380 | +0.080 | inconsistent |
+
+**Summary:** pass: 42, compensation: 6, inconsistent: 4, unreliable: 1
+
+**Lowercase/Uppercase ratio:** 1.11 (expected: 1.10-1.16)
+```
+
+## Lowercase/Uppercase Density Ratio
+
+The audit reports the overall lowercase-to-uppercase density ratio:
+
+- **Typical range**: 1.10 to 1.16 in professional fonts
+- **Meaning**: Lowercase is typically 10-16% darker than uppercase
+- **Why**: Lowercase has less whitespace due to x-height normalization
+
+<Note>
+  A ratio outside 1.10-1.16 suggests the font may have color balance issues between cases.
+</Note>
+
+## Use Cases
+
+- **Final production check**: Run before releasing the font to catch weight inconsistencies
+- **After major edits**: Verify that design changes didn't introduce color issues
+- **Multi-master validation**: Ensure color is even across all masters
+- **Quality control**: Comprehensive check of all letters at once
+
+<Info>
+  This is the most comprehensive color analysis tool. Use it before final production to catch any weight inconsistencies across the entire character set.
+</Info>
+
+## What Gets Checked
+
+The audit automatically checks:
+
+- **Uppercase letters**: A-Z
+- **Lowercase letters**: a-z
+- **Figures**: 0-9
+- **Per category**: Each group evaluated against its reference (n for lowercase, H for uppercase/figures)
+- **Cross-category ratio**: Lowercase-to-uppercase density relationship
+
+## Industry Patterns
+
+Based on analysis of professional fonts, expected density patterns:
+
+### Lowercase
+- Straight stems (n, h, m): Reference baseline
+- Round forms (o, c, e): 5-10% darker
+- Wide multi-stem (m, w): 10-20% darker
+- Narrow single-stem (i, l, r): 5-15% lighter
+
+### Uppercase
+- Straight stems (H, I, E, F): Reference baseline
+- Round forms (O, C, Q): 5-10% darker
+- Wide forms (M, W): 10-20% darker
+- Narrow forms (I, L): 10-20% lighter
+
+## Related Tools
+
+- [compare_color](/api/analysis/compare-color) - Compare specific glyphs
+- [measure_color](/api/analysis/measure-color) - Measure single glyph density
+- [compare_stems](/api/analysis/compare-stems) - Check stem consistency

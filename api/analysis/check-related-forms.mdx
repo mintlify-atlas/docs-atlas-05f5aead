@@ -1,0 +1,177 @@
+---
+title: check_related_forms
+description: Cross-validate related figures and letters (0↔O, 6↔9, 8↔S, 3↔B, etc.)
+---
+
+## Overview
+
+Cross-validates related figures and letters based on industry patterns across professional fonts. Checks width ratios between pairs that should be structurally related (e.g., six ≈ nine, zero < O, eight ~ S).
+
+## Syntax
+
+```python
+check_related_forms(master_id: str = "") -> str
+```
+
+## Parameters
+
+<ParamField path="master_id" type="string" default="">
+  Optional master ID. If empty, analyzes ALL masters.
+</ParamField>
+
+## Return Value
+
+Returns a formatted markdown report with:
+
+- Per-master analysis of related pairs
+- Width ratios with expected ranges
+- Verdict for each pair (pass/fail)
+- Severity levels (high/medium/low)
+
+## Checked Pairs
+
+Based on structural relationships in professional fonts:
+
+| Pair | Relationship | Expected | Severity |
+|------|--------------|----------|----------|
+| **6 ≈ 9** | Rotated forms (should match) | Equal widths | High |
+| **0 < O** | Zero narrower and lighter | 0 is 90-98% of O | Medium |
+| **3 ≈ 5** | Related open-bowl figures | Similar widths | Medium |
+| **3 < B** | Three narrower than B | 3 is 85-95% of B | Medium |
+| **8 ~ S** | Related S-shape | Informational | Low |
+| **1 > I** | One wider (flag/crossbar) | Informational | Low |
+
+## Verdict System
+
+<AccordionGroup>
+  <Accordion title="pass" icon="circle-check" iconType="solid">
+    Width ratio within expected range. Marked **green (4)** in GlyphsApp.
+  </Accordion>
+  
+  <Accordion title="fail (high severity)" icon="circle-xmark" iconType="solid">
+    Critical mismatch (e.g., 6 and 9 have different widths). Marked **red (0)** in GlyphsApp.
+  </Accordion>
+  
+  <Accordion title="fail (medium severity)" icon="triangle-exclamation" iconType="solid">
+    Ratio outside expected range but less critical. Marked **yellow (3)** in GlyphsApp.
+  </Accordion>
+  
+  <Accordion title="fail (low severity)" icon="info" iconType="solid">
+    Informational warning only. Marked **yellow (3)** in GlyphsApp.
+  </Accordion>
+</AccordionGroup>
+
+## Color Marking System
+
+<Info>
+  Results are automatically marked in GlyphsApp:
+  - **Red (0)** = high-severity failure
+  - **Yellow (3)** = medium/low warning
+  - **Green (4)** = pass
+  
+  If analyzing all masters, glyph color = worst verdict across all masters.
+</Info>
+
+## Examples
+
+### Check all related forms
+
+```python
+report = check_related_forms()
+print(report)
+# Analyzes all masters, marks glyphs with worst verdict
+```
+
+### Check specific master
+
+```python
+masters = get_masters()
+bold_id = masters["masters"][1]["id"]
+
+report = check_related_forms(master_id=bold_id)
+```
+
+### Check across all masters
+
+```python
+masters = get_masters()
+for master in masters["masters"]:
+    print(f"\n=== {master['name']} ===")
+    report = check_related_forms(master_id=master["id"])
+    print(report)
+```
+
+## Sample Output
+
+```markdown
+## Related Forms
+
+### Regular
+
+| Pair | Ratio | Expected | Verdict |
+|------|-------|----------|---------|  
+| six/nine | 100% | 98-102% | pass |
+| zero/O | 95% | 90-98% | pass |
+| three/five | 92% | 88-105% | pass |
+| three/B | 88% | 85-95% | pass |
+| eight/S | 105% | informational | pass |
+| one/I | 145% | informational | pass *|
+
+### Bold
+
+| Pair | Ratio | Expected | Verdict |
+|------|-------|----------|---------|  
+| six/nine | 105% | 98-102% | fail (high) *|
+| zero/O | 88% | 90-98% | fail (medium) *|
+| three/B | 98% | 85-95% | pass |
+```
+
+## Pair Explanations
+
+### six ≈ nine (High severity)
+
+6 and 9 are rotated forms — they should have identical widths in almost all fonts. A mismatch here is a strong indicator of an error.
+
+### zero < O (Medium severity)
+
+Zero is typically narrower than uppercase O to distinguish them:
+- **Zero**: More vertical, narrower, lighter
+- **O**: Rounder, wider
+- **Expected ratio**: 90-98%
+
+### three ≈ five (Medium severity)
+
+Both are open-bowl figures with similar structure. Width should be similar.
+
+### three < B (Medium severity)
+
+Three is typically narrower than uppercase B:
+- **Three**: Figure proportions
+- **B**: Uppercase proportions
+- **Expected ratio**: 85-95%
+
+### eight ~ S (Low severity / Informational)
+
+Eight and S share an S-shaped structure, but the relationship is loose. Informational only.
+
+### one > I (Low severity / Informational)
+
+One is often wider than I due to flag/crossbar, but highly design-dependent. Informational only.
+
+## Use Cases
+
+- **Figure validation**: Ensure numerals have correct structural relationships
+- **0/O distinction**: Verify zero is distinguishable from letter O
+- **6/9 consistency**: Catch mirrored forms with different widths
+- **Cross-category check**: Validate figure-to-letter relationships (3/B, 8/S)
+- **Multi-master validation**: Ensure relationships hold across all masters
+
+<Note>
+  This tool is based on analysis of professional fonts. Being outside the expected range may be intentional (especially for display fonts or specific design choices), but high-severity failures (like 6≠9) are strong error signals.
+</Note>
+
+## Related Tools
+
+- [compare_proportions](/api/analysis/compare-proportions) - Check width proportions within letters
+- [check_punctuation](/api/analysis/check-punctuation) - Check punctuation consistency
+- [get_glyph](/api/read/get-glyph) - Get glyph width and metrics
