@@ -89,7 +89,8 @@
               "api/analysis/check-punctuation",
               "api/analysis/check-compatibility",
               "api/analysis/analyze-kerning",
-              "api/analysis/analyze-spacing"
+              "api/analysis/analyze-spacing",
+              "api/analysis/get-spacing-strings"
             ]
           },
           {

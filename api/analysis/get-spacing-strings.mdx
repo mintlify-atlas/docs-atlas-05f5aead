@@ -1,0 +1,160 @@
+---
+title: get_spacing_strings
+description: Get spacing test strings for visually evaluating glyph spacing
+---
+
+## Overview
+
+Generates canonical spacing test strings for a specific glyph based on industry-standard methods. Use these strings in GlyphsApp's Edit view to visually assess spacing quality.
+
+## Parameters
+
+<ParamField path="glyph_name" type="string" required>
+  Name of the glyph to generate test strings for
+</ParamField>
+
+## Returns
+
+Returns a formatted markdown report with spacing test strings organized by method:
+
+<ResponseField name="threeAtATime" type="object">
+  Three-at-a-time method (OH no Type Co) - glyph sandwiched between reference glyphs
+  
+  <Expandable title="properties">
+    <ResponseField name="betweenStraight" type="string">
+      Test with straight-stem reference (n or H)
+    </ResponseField>
+    
+    <ResponseField name="betweenRound" type="string">
+      Test with round reference (o or O)
+    </ResponseField>
+    
+    <ResponseField name="mixed" type="string">
+      Mixed combinations
+    </ResponseField>
+    
+    <ResponseField name="reference" type="string">
+      Reference rhythm pattern
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="systematicPairs" type="string">
+  Systematic pairs method (Jamra) - glyph paired with every letter in its case
+</ResponseField>
+
+<ResponseField name="crossCase" type="string">
+  Cross-case integration - glyph in mixed uppercase/lowercase context
+</ResponseField>
+
+<ResponseField name="contextStrings" type="array">
+  Common word contexts containing the glyph
+</ResponseField>
+
+<ResponseField name="ruderWords" type="array">
+  Ruder test - hard vs easy word columns for overall color evaluation
+</ResponseField>
+
+<ResponseField name="singleStemStress" type="array">
+  Single-stem stress test words (for glyphs like i, l, r, t with narrow stems)
+</ResponseField>
+
+## Test String Methods
+
+### Three-at-a-time (OH no Type Co)
+
+The glyph is sandwiched between reference glyphs to check rhythm:
+- **Between straight stems**: Uses n (lowercase) or H (uppercase) as reference
+- **Between rounds**: Uses o (lowercase) or O (uppercase) as reference
+- **Goal**: Middle glyph should have equal visual white space on both sides
+
+### Systematic pairs (Jamra)
+
+The glyph is paired with every letter in its case to reveal spacing issues across different neighbor shapes.
+
+### Cross-case integration
+
+Tests the glyph in mixed uppercase/lowercase context to ensure it works in real text.
+
+### Ruder test
+
+Provides word lists with varying difficulty:
+- **Easy words**: Regular rhythm, easier to space
+- **Hard words**: Challenging combinations that reveal spacing weaknesses
+
+### Single-stem stress test
+
+For narrow glyphs (i, l, r, t), generates words with multiple instances to check overall color and rhythm (e.g., "millennial", "minimum").
+
+## Usage
+
+```python
+# Get spacing test strings for lowercase 'a'
+get_spacing_strings("a")
+
+# Get spacing test strings for uppercase 'R'
+get_spacing_strings("R")
+
+# Get spacing test strings for figure
+get_spacing_strings("three")
+```
+
+## Example Output
+
+```markdown
+## Spacing test strings for 'a' (lowercase)
+
+### Three-at-a-time
+Compare rhythm — middle glyph should have equal visual space on both sides.
+
+- Between straight: `nanan nanan nanan`
+- Between round: `oaoao oaoao oaoao`
+- Mixed: `naoan oaano naoan`
+- Reference: `nonon nonon nonon`
+
+### Systematic pairs
+`aabacadaeafagahaiajakalamanaoapaqarasatauavawaxayaza`
+
+### Cross-case
+`Anna Anna Anna`
+
+### Ruder words containing 'a'
+available, arena, balance, catalog, database
+
+### Single-stem stress test
+(Not applicable for 'a')
+```
+
+## Workflow
+
+<Steps>
+  <Step title="Generate test strings">
+    Ask your AI assistant to generate spacing strings for a glyph:
+    
+    ```
+    Generate spacing test strings for the letter 'a'
+    ```
+  </Step>
+  
+  <Step title="Copy to Edit view">
+    Copy the generated strings into GlyphsApp's Edit view to visually evaluate spacing.
+  </Step>
+  
+  <Step title="Adjust spacing">
+    Based on visual assessment, adjust sidebearings using [`set_glyph_width`](/api/write/set-glyph-width) or manual editing.
+  </Step>
+  
+  <Step title="Iterate">
+    Regenerate test strings after adjustments to verify improvements.
+  </Step>
+</Steps>
+
+<Tip>
+  Use the three-at-a-time method first to establish basic rhythm, then check systematic pairs to find problem neighbors.
+</Tip>
+
+## Related Tools
+
+- [analyze_spacing](/api/analysis/analyze-spacing) - Automated spacing quality analysis
+- [set_glyph_width](/api/write/set-glyph-width) - Adjust glyph advance width
+- [get_glyph](/api/read/get-glyph) - Get sidebearing values
