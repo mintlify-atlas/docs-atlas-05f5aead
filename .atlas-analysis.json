@@ -1,0 +1,153 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "Glyphs MCP",
+  "projectDescription": "MCP bridge for AI-assisted type design in GlyphsApp with real-time font data access and typographic analysis tools.",
+  "theme": "willow",
+  "primaryColor": "#6366f1",
+  "lightColor": "#818cf8",
+  "darkColor": "#4f46e5",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "how-it-works",
+              "multi-master-support"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Read Tools",
+            "pages": [
+              "api/read/get-font-info",
+              "api/read/list-glyphs",
+              "api/read/get-glyph",
+              "api/read/get-glyph-svg",
+              "api/read/get-selection",
+              "api/read/get-masters",
+              "api/read/get-kerning",
+              "api/read/get-features"
+            ]
+          },
+          {
+            "group": "Write Tools",
+            "pages": [
+              "api/write/create-glyph",
+              "api/write/set-glyph-paths",
+              "api/write/set-glyph-width",
+              "api/write/set-glyph-color",
+              "api/write/set-glyph-unicode",
+              "api/write/rename-glyph",
+              "api/write/duplicate-glyph",
+              "api/write/delete-glyph",
+              "api/write/set-kerning-pair",
+              "api/write/delete-kerning-pair",
+              "api/write/set-feature-code"
+            ]
+          },
+          {
+            "group": "Analysis Tools",
+            "pages": [
+              "api/analysis/measure-stems",
+              "api/analysis/compare-stems",
+              "api/analysis/get-stem-targets",
+              "api/analysis/measure-color",
+              "api/analysis/compare-color",
+              "api/analysis/audit-font-color",
+              "api/analysis/check-overshoots",
+              "api/analysis/compare-proportions",
+              "api/analysis/check-diagonal-weights",
+              "api/analysis/check-junctions",
+              "api/analysis/check-related-forms",
+              "api/analysis/check-punctuation",
+              "api/analysis/check-compatibility",
+              "api/analysis/analyze-kerning",
+              "api/analysis/analyze-spacing"
+            ]
+          },
+          {
+            "group": "RMX Tools",
+            "pages": [
+              "api/rmx/harmonize",
+              "api/rmx/scale",
+              "api/rmx/tune",
+              "api/rmx/monospace",
+              "api/rmx/batch"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "api/advanced/execute-in-glyphs"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Real-time bidirectional font data access via MCP",
+    "Comprehensive typographic analysis tools",
+    "Multi-master support with per-master operations",
+    "RMX Tools integration for curve optimization",
+    "Color-coded visual feedback in GlyphsApp",
+    "Kerning and spacing quality analysis"
+  ],
+  "publicApiSurface": [
+    "get_font_info",
+    "list_glyphs",
+    "get_glyph",
+    "get_glyph_svg",
+    "get_selection",
+    "get_masters",
+    "get_kerning",
+    "get_features",
+    "create_glyph",
+    "set_glyph_paths",
+    "set_glyph_width",
+    "set_glyph_color",
+    "set_glyph_unicode",
+    "rename_glyph",
+    "duplicate_glyph",
+    "delete_glyph",
+    "set_kerning_pair",
+    "delete_kerning_pair",
+    "set_feature_code",
+    "measure_stems",
+    "compare_stems",
+    "get_stem_targets",
+    "measure_color",
+    "compare_color",
+    "audit_font_color",
+    "check_overshoots",
+    "compare_proportions",
+    "check_diagonal_weights",
+    "check_junctions",
+    "check_related_forms",
+    "check_punctuation",
+    "check_compatibility",
+    "analyze_kerning",
+    "analyze_spacing",
+    "rmx_harmonize",
+    "rmx_scale",
+    "rmx_tune",
+    "rmx_monospace",
+    "rmx_batch",
+    "execute_in_glyphs"
+  ]
+}
